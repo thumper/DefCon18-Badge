@@ -53,7 +53,8 @@ typedef enum
 	AKA,
 	KINGPIN,
 	USB,
-	NINJA
+	NINJA,
+	WEBOFTRUST
 } badge_state_type;
 
 typedef enum

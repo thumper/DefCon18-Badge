@@ -50,6 +50,15 @@ uint16_t 	gSW = 0; 							// State of buttons (HIGH = currently pressed), bit 1 
 uint16_t 	gUSB_EN; 							// HIGH if USB is connected, LOW if no USB
 uint8_t 	gNINJA_EN = 0x00; 		// 0 if Ninja Badge functionality has been unlocked, 0xFF otherwise
 
+// bloom filter
+#define DEGREES	4
+#define BLOOMVEC	151		// 500 people with 10% error
+uint16_t	gBloom[DEGREES][BLOOMVEC];
+uint8_t		gBloomDegree, gBloomByte;
+uint32_t	gBloomID = 6661337;
+#define SALTS	3
+uint32_t	gBloomSalts[SALTS];
+
 /****************************************************************************
  ************************** Functions ***************************************
  ***************************************************************************/
@@ -144,6 +153,9 @@ void dc18_badge(void)
 					dc18_load_tumblers();					  		  
   		  }
   		  break;
+		case WEBOFTRUST:
+		    dc18_clear_fb();
+		    break;
   		case USB:
 				Term_SendStr("Welcome to the DEFCON 18 Badge."); // send message so the user knows we're in USB mode now
 				while (gUSB_EN) // once we've entered this mode, stay here until USB is disconnected
@@ -212,6 +224,12 @@ void dc18_badge(void)
 			{	
 				Term_ReadChar(&c); 	 // ...then get it
 				if (c == '#') badge_state = USB; // enter USB mode if requested
+				if (c == '?') {
+				    Term_SendChar((uint8_t) (gBloomID & 0xFF));
+				    Term_SendChar((uint8_t) ((gBloomID>>8) & 0xFF));
+				    Term_SendChar((uint8_t) ((gBloomID>>16) & 0xFF));
+				    Term_SendChar((uint8_t) ((gBloomID>>24) & 0xFF));
+				}
 			}
     }
     
@@ -255,6 +273,7 @@ void dc18_change_state(void)
 {
   uint16_t i;
   uint32_t t;
+  uint8_t c;
   
  	gSTATE_CHANGE = TRUE; 	
 
@@ -310,9 +329,47 @@ void dc18_change_state(void)
    		if (gSW == SW_0) badge_state = BY;
    		else gSTATE_CHANGE = FALSE; 			
    		break; 			
-		case NINJA:
+	case WEBOFTRUST:
    		if (gSW == SW_1) badge_state = DEFCON;
-   		else if (gSW == SW_0)
+   		else if (gUSB_EN) {
+		    if (gSW == SW_0) {
+			// trigger WEB OF TRUST in other 
+			uint32_t rBloomID = 0;
+			Term_SendChar('?');
+			Term_ReadChar(&c);
+			rBloomID |= c;
+			Term_ReadChar(&c);
+			rBloomID |= ((uint32_t)c << 8);
+			Term_ReadChar(&c);
+			rBloomID |= ((uint32_t)c << 16);
+			Term_ReadChar(&c);
+			rBloomID |= ((uint32_t)c << 24);
+
+			// TODO: check bloom filters for rBloomID
+		    } else if (gSW == SW_BOTH) {
+			uint32_t rBloomID = 0;
+			Term_SendChar('?');
+			Term_ReadChar(&c);
+			rBloomID |= c;
+			Term_ReadChar(&c);
+			rBloomID |= ((uint32_t)c << 8);
+			Term_ReadChar(&c);
+			rBloomID |= ((uint32_t)c << 16);
+			Term_ReadChar(&c);
+			rBloomID |= ((uint32_t)c << 24);
+
+			// TODO: calc bloom filter
+			// TODO: add into our array
+			// TODO: do same for their remotes
+		    }
+		} else gSTATE_CHANGE = FALSE;
+		break;
+	case NINJA:
+   		if (gSW == SW_1) {
+		    badge_state = WEBOFTRUST;
+		    gBloomDegree = 0;
+		    gBloomByte = 0;
+   		} else if (gSW == SW_0)
    		{
    			// clear frame buffer and variables in preparation for the next state
    			dc18_clear_fb();
@@ -572,6 +629,8 @@ uint32_t dc18_encode_tumblers(tumbler_state_type *tumblers)
 /**************************************************************
 /* MISC. UTILITY FUNCTIONS
 /**************************************************************/
+
+
 
 /**************************************************************
 *	Function:  SendChar

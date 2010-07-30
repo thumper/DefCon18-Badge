@@ -21,9 +21,8 @@ A million repetitions of "a"
 
 #define SHA1HANDSOFF
 
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>	/* for u_int*_t */
+#include <stdint.h>
+#include "sha1.h"
 
 /* ================ sha1.h ================ */
 /*
@@ -33,17 +32,17 @@ By Steve Reid <steve@edmweb.com>
 */
 
 typedef struct {
-    u_int32_t state[5];
-    u_int32_t count[2];
-    unsigned char buffer[64];
+    uint32_t state[5];
+    uint32_t count[2];
+    uint8_t buffer[64];
 } SHA1_CTX;
 
-void SHA1Transform(u_int32_t state[5], const unsigned char buffer[64]);
+void SHA1Transform(uint32_t state[5], const uint8_t buffer[64]);
 void SHA1Init(SHA1_CTX* context);
-void SHA1Update(SHA1_CTX* context, const unsigned char* data, u_int32_t len);
-void SHA1Final(unsigned char digest[20], SHA1_CTX* context);
+void SHA1Update(SHA1_CTX* context, const uint8_t* data, uint32_t len);
+void SHA1Final(uint8_t digest[20], SHA1_CTX* context);
 /* ================ end of sha1.h ================ */
-#include <endian.h>
+/* #include <endian.h> */
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 
@@ -67,19 +66,35 @@ void SHA1Final(unsigned char digest[20], SHA1_CTX* context);
 #define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))+blk(i)+0x8F1BBCDC+rol(v,5);w=rol(w,30);
 #define R4(v,w,x,y,z,i) z+=(w^x^y)+blk(i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
 
+void memcpy(uint8_t *dest, const uint8_t *src, uint32_t len);
+
+void memcpy(uint8_t *dest, const uint8_t *src, uint32_t len)
+{
+	uint32_t i;
+	for (i = 0; i < len; i++)
+	    dest[i] = src[i];
+}
+
+void memset(uint8_t *dest, uint8_t src, uint32_t len);
+void memset(uint8_t *dest, uint8_t src, uint32_t len)
+{
+	uint32_t i;
+	for (i = 0; i < len; i++)
+	    dest[i] = src;
+}
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 
-void SHA1Transform(u_int32_t state[5], const unsigned char buffer[64])
+void SHA1Transform(uint32_t state[5], const uint8_t buffer[64])
 {
-u_int32_t a, b, c, d, e;
+uint32_t a, b, c, d, e;
 typedef union {
-    unsigned char c[64];
-    u_int32_t l[16];
+    uint8_t c[64];
+    uint32_t l[16];
 } CHAR64LONG16;
 #ifdef SHA1HANDSOFF
 CHAR64LONG16 block[1];  /* use array to appear as a pointer */
-    memcpy(block, buffer, 64);
+    memcpy((uint8_t *)block, (uint8_t *) buffer, 64);
 #else
     /* The following had better never be used because it causes the
      * pointer-to-const buffer to be cast into a pointer to non-const.
@@ -124,7 +139,7 @@ CHAR64LONG16* block = (const CHAR64LONG16*)buffer;
     /* Wipe variables */
     a = b = c = d = e = 0;
 #ifdef SHA1HANDSOFF
-    memset(block, '\0', sizeof(block));
+    memset((uint8_t*)block, '\0', sizeof(block));
 #endif
 }
 
@@ -143,12 +158,14 @@ void SHA1Init(SHA1_CTX* context)
 }
 
 
+
+
 /* Run your data through this. */
 
-void SHA1Update(SHA1_CTX* context, const unsigned char* data, u_int32_t len)
+void SHA1Update(SHA1_CTX* context, const uint8_t* data, uint32_t len)
 {
-u_int32_t i;
-u_int32_t j;
+uint32_t i;
+uint32_t j;
 
     j = context->count[0];
     if ((context->count[0] += len << 3) < j)
@@ -156,7 +173,7 @@ u_int32_t j;
     context->count[1] += (len>>29);
     j = (j >> 3) & 63;
     if ((j + len) > 63) {
-        memcpy(&context->buffer[j], data, (i = 64-j));
+        memcpy((uint8_t *)&context->buffer[j], data, (i = 64-j));
         SHA1Transform(context->state, context->buffer);
         for ( ; i + 63 < len; i += 64) {
             SHA1Transform(context->state, &data[i]);
@@ -170,11 +187,11 @@ u_int32_t j;
 
 /* Add padding and return the message digest. */
 
-void SHA1Final(unsigned char digest[20], SHA1_CTX* context)
+void SHA1Final(uint8_t digest[20], SHA1_CTX* context)
 {
-unsigned i;
-unsigned char finalcount[8];
-unsigned char c;
+uint32_t i;
+uint8_t finalcount[8];
+uint8_t c;
 
 #if 0	/* untested "improvement" by DHR */
     /* Convert context->count to a sequence of bytes
@@ -210,10 +227,35 @@ unsigned char c;
          ((context->state[i>>2] >> ((3-(i & 3)) * 8) ) & 255);
     }
     /* Wipe variables */
-    memset(context, '\0', sizeof(*context));
-    memset(&finalcount, '\0', sizeof(finalcount));
+    memset((uint8_t*)context, '\0', sizeof(*context));
+    memset((uint8_t*)&finalcount, '\0', sizeof(finalcount));
 }
 /* ================ end of sha1.c ================ */
+
+#define BUFSIZE 8
+uint32_t sha1(uint32_t id, uint32_t salt)
+{
+    SHA1_CTX ctx;
+    uint8_t hash[20], buf[BUFSIZE];
+    uint32_t i, result;
+    for (i = 0; i < 4; i++) {
+	buf[i] = (uint8_t) ((id >> (i*8)) & 0xFF);
+	buf[i+4] = (uint8_t) ((salt >> (i*8)) & 0xFF);
+    }
+    SHA1Init(&ctx);
+    for(i=0;i<1000;i++)
+        SHA1Update(&ctx, buf, BUFSIZE);
+    SHA1Final(hash, &ctx);
+    result = 0;
+    for(i=0;i<5;i++) {
+	uint32_t num = hash[4*i]
+			+ (((uint32_t)hash[4*i+1])<<8)
+			+ (((uint32_t)hash[4*i+2])<<16)
+			+ (((uint32_t)hash[4*i+3])<<24);
+	result ^= num;
+    }
+    return result;
+}
 
 #if 0
 

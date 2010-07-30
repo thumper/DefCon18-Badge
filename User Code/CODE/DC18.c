@@ -47,6 +47,7 @@
 #include "IO_Map.h"
 
 #include "DC18_Badge.h"
+#include "sha1.h"
 
 void main(void)
 {
