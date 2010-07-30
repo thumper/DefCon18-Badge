@@ -2,7 +2,7 @@
 PE_DesktopFileVersion=1077
 
 [Desktop]
-StartupPrj=C:\Documents and Settings\Joe Grand\Desktop\Firmware\User Code\DC18.pe
+StartupPrj=Z:\thumper On My Mac\research\DEFCON-18-Badge\Extras\Firmware\User Code\DC18.pe
 
 [PE_IDE_PlugIn]
 
@@ -23,12 +23,12 @@ ViewSizeIndex=0
 [ErrorPanel]
 Status=hiden
 WindowState=NORMAL
-Rect=[3|1011|781|144]
+Rect=[3|706|781|144]
 
 [ResourceMeter]
 Status=hiden
 WindowState=NORMAL
-Rect=[-64|909|781|159]
+Rect=[-64|706|781|159]
 
 [BeanSelector]
 Status=hiden
@@ -59,7 +59,7 @@ ViewItemLevel=EXPERT
 [PrphInspector]
 Status=hiden
 WindowState=NORMAL
-Rect=[199|31|781|1024]
+Rect=[199|31|781|770]
 ViewMode=PrphRegInit
 SortRegsByAddr=Yes
 GroupRegisters=Yes

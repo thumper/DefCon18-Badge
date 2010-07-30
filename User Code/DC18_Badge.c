@@ -48,7 +48,7 @@ tumbler_state_type  gTumblers[15];	// setting of each tumbler
 uint16_t 	gSTATE_CHANGE = TRUE; // If TRUE, need to redraw the screen since state has changed
 uint16_t 	gSW = 0; 							// State of buttons (HIGH = currently pressed), bit 1 = SW1, bit 0 = SW0 
 uint16_t 	gUSB_EN; 							// HIGH if USB is connected, LOW if no USB
-uint8_t 	gNINJA_EN = 0xFF; 		// 0 if Ninja Badge functionality has been unlocked, 0xFF otherwise
+uint8_t 	gNINJA_EN = 0x00; 		// 0 if Ninja Badge functionality has been unlocked, 0xFF otherwise
 
 /****************************************************************************
  ************************** Functions ***************************************

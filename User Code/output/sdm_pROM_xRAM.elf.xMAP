@@ -68,7 +68,6 @@
   0000004A 00000010 .const.data F@122	(DC18_Badge.c)
   0000005A 00000006 .data   FBitIO_portDsc	(Cpu.c)
   00000060 00000001 .data   FgSTATE_CHANGE	(DC18_Badge.c)
-  00000061 00000001 .data   FgNINJA_EN	(DC18_Badge.c)
 #>00000062          __xRAM_data_end (linker command file)
 #>00000061          __data_size (linker command file)
 
@@ -77,15 +76,16 @@
 #>00000064          _START_BSS (linker command file)
   00000064 00000001 .bss    Fbadge_state	(DC18_Badge.c)
   00000065 00000001 .bss    FgSW	(DC18_Badge.c)
-  00000066 00000001 .bss    FgUSB_EN	(DC18_Badge.c)
-  00000067 0000000F .bss    FgTumblers	(DC18_Badge.c)
-  0000006E 00000001 .bss    FgTumblerIdx	(DC18_Badge.c)
-  0000006F 00000001 .bss    FgIconIdx	(DC18_Badge.c)
-  00000070 00000001 .bss    FgLoc	(DC18_Badge.c)
-  00000071 00000200 .bss    FgFB	(DC18_Badge.c)
-  00000171 00000001 .bss    FSerFlag	(Inhr6.c)
-#>00000172          _END_BSS (linker command file)
-#>0000010E          F_Xbss_length (linker command file)
+  00000066 00000001 .bss    FgNINJA_EN	(DC18_Badge.c)
+  00000067 00000001 .bss    FgUSB_EN	(DC18_Badge.c)
+  00000068 0000000F .bss    FgTumblers	(DC18_Badge.c)
+  0000006F 00000001 .bss    FgTumblerIdx	(DC18_Badge.c)
+  00000070 00000001 .bss    FgIconIdx	(DC18_Badge.c)
+  00000071 00000001 .bss    FgLoc	(DC18_Badge.c)
+  00000072 00000200 .bss    FgFB	(DC18_Badge.c)
+  00000172 00000001 .bss    FSerFlag	(Inhr6.c)
+#>00000174          _END_BSS (linker command file)
+#>00000110          F_Xbss_length (linker command file)
 #>00000174          _HEAP_ADDR (linker command file)
 #>00000100          _HEAP_SIZE (linker command file)
 #>00000274          _HEAP_END (linker command file)
@@ -103,7 +103,7 @@
 #>00000000          F_xROM_to_xRAM (linker command file)
 #>00000001          F_pROM_to_xRAM (linker command file)
 #>00000064          F_start_bss (linker command file)
-#>00000172          F_end_bss (linker command file)
+#>00000174          F_end_bss (linker command file)
 #>000003F4          __DATA_END (linker command file)
 
 # .ApplicationConfiguration
@@ -120,5 +120,5 @@
   000016CC 00000001 00000061 .p_flash_ROM_data
   00008000 00008000 00000400 .p_internal_RAM
 
-# Link start time: Tue Jun 01 20:33:30 2010
-# Link end time: Tue Jun 01 20:33:30 2010
+# Link start time: Thu Jul 29 18:47:57 2010
+# Link end time: Thu Jul 29 18:47:58 2010
