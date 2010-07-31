@@ -47,9 +47,6 @@ uint16_t 	gSW = 0; 							// State of buttons (HIGH = currently pressed), bit 1 
 uint16_t 	gUSB_EN; 							// HIGH if USB is connected, LOW if no USB
 
 // bloom filter
-#define DEGREES	4
-#define BLOOMVEC	76		// 500 people with 10% error
-BloomVecBase	gBloom[DEGREES][BLOOMVEC];
 uint8_t		gBloomDegree;
 uint32_t	gBloomID = 0;
 uint32_t	gRNGseed = 0;
@@ -60,6 +57,7 @@ uint32_t	gRNGseed = 0;
 
 void dc18_badge(void)
 { 
+  BloomVecBase	gBloom[DEGREE][BLOOMVEC];
   uint8_t c;
   uint16_t i, j;
 	
@@ -205,7 +203,7 @@ void dc18_badge(void)
     }
     
     dc18_get_buttons();	 // Set gSW flags based on button presses	
-		dc18_change_state(); // Change state, if necessary
+		dc18_change_state(gBloom); // Change state, if necessary
 	if (gSW != 0 && !gBloomID) 
 	    gBloomID = gRNGseed = dc18_rng(311, gRNGseed);
   }
@@ -242,7 +240,7 @@ void dc18_get_buttons(void)
 
 /**************************************************************/
 
-void dc18_change_state(void)
+void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 {
   gSTATE_CHANGE = TRUE; 	
 
@@ -318,7 +316,7 @@ void dc18_change_state(void)
 				dc18_SendNum(hash[2]);
 				Term_SendChar('\n');
 				// TODO: check all degrees
-				found = bloom_check(hash,gBloom[0]);
+				found = bloom_check(hash, gBloom[0]);
 				dc18_SendNum(found);
 				Term_SendChar('\n');
 		    } else if (gSW == SW_BOTH) {
@@ -327,7 +325,7 @@ void dc18_change_state(void)
 				Term_SendChar('?');
 				rBloomID = dc18_ReadNum();
 				bloom_CalcHashes(rBloomID, hash);
-				bloom_set(hash,gBloom[0]);
+//				bloom_set(hash, gBloom[0]);
 				// TODO: do same for their remotes
 		    } else gSTATE_CHANGE = FALSE;
 		} else gSTATE_CHANGE = FALSE;

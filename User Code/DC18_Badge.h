@@ -34,6 +34,8 @@
 #define SW_BOTH		0b11
 
 #define SALTS 3
+#define DEGREE 3
+#define BLOOMVEC 76
 
 
 /**************************************************************************
@@ -65,9 +67,16 @@ typedef enum
  ************************** Function prototypes ************************
  ***********************************************************************/
 
+typedef uint16_t BloomHashBase;
+typedef uint32_t BloomVecBase;
+void bloom_CalcHashes(uint32_t rBloomID, BloomHashBase hash[SALTS]);
+short bloom_check(BloomHashBase *hash, BloomVecBase vec[]);
+void bloom_set(BloomHashBase *hash, BloomVecBase vec[]);
+
+
 void dc18_badge(void);
 void dc18_get_buttons(void);
-void dc18_change_state(void);
+void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC]);
 
 void dc18_clear_fb(void);
 void dc18_load_image(uint16_t image_num);
@@ -85,12 +94,6 @@ void Delay(uint16_t ms);
 uint32_t dc18_rng(uint32_t salt, uint32_t seed);
 void dc18_SendNum(uint32_t b);
 uint32_t dc18_ReadNum();
-typedef uint16_t BloomHashBase;
-typedef uint16_t BloomVecBase;
-void bloom_CalcHashes(uint32_t rBloomID, BloomHashBase hash[SALTS]);
-short bloom_check(BloomHashBase hash[], BloomVecBase vec[]);
-void bloom_set(BloomHashBase hash[], BloomVecBase vec[]);
-
 
 
 
