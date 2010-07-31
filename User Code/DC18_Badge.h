@@ -88,6 +88,8 @@ void SendChar(uint8_t);
 //void SendMsg(uint8_t *msg);
 void Delay(uint16_t ms);
 
+uint32_t dc18_rng();
+
 
 /**************************************************************************
 ************** 000017F0: 0060d0f5bfd62049a77dcfc3a14fad8b *****************

@@ -60,6 +60,7 @@ uint32_t	gBloomID = 0;
 uint32_t	gRNG = 0;
 #define SALTS	3
 uint32_t	gBloomSalts[SALTS];
+uint32_t	gRNGseed = 0;
 
 /****************************************************************************
  ************************** Functions ***************************************
@@ -69,14 +70,13 @@ void dc18_badge(void)
 { 
   uint8_t c;
   uint16_t i, j;
-  uint32_t RNG = 0;
 	
 	dc18_init(); // hardware initialization
 	
   // begin operation
   while(1)
   {
-    RNG++;
+	gRNGseed++;
   	switch (badge_state)
   	{
   		case DEFCON:
@@ -236,7 +236,9 @@ void dc18_badge(void)
 				    Term_SendChar((uint8_t) ((gBloomID>>24) & 0xFF));
 #else
 				    int i;
-				    uint32_t b = gBloomID;
+				    uint32_t b;
+					if (!gBloomID) gBloomID = dc18_rng();
+				    b = gBloomID;
 				    for (i=0; i<32; i+=4) {
 					uint32_t d = (b >> 28-i) & 0xF;
 					if (d < 10) Term_SendChar((uint8_t)('0'+d));
@@ -249,15 +251,8 @@ void dc18_badge(void)
     
     dc18_get_buttons();	 // Set gSW flags based on button presses	
 		dc18_change_state(); // Change state, if necessary
-	if (gSW != 0 && gBloomID == 0) 
-	{
-		char *s = "abc\0";
-		uint32_t *t = (uint32_t *)s;
-		sha1(*t, 0x0);
-
-
-	    gBloomID = sha1(RNG, 0xDEADBEEF);
-	}
+	if (gSW != 0 && !gBloomID) 
+	    gBloomID = dc18_rng();
   }
 }
 
@@ -610,6 +605,12 @@ void dc18_sleep(void)
 }
 
 
+uint32_t dc18_rng() {
+    gRNGseed = 311 * 117 * gRNGseed * gRNGseed;
+    return gRNGseed;
+}
+
+
 /**************************************************************/
 /* NINJA ROUTINES
 /**************************************************************/
@@ -642,6 +643,8 @@ uint32_t dc18_encode_tumblers(tumbler_state_type *tumblers)
     
     return x;
 }
+
+
 
 /**************************************************************
 /* INTERRUPT SERVICE ROUTINES
