@@ -199,6 +199,13 @@ void dc18_badge(void)
 				    b = gBloomID;
 				    dc18_SendNum(gBloomID);
 				}
+				if (c == '!') 
+				{
+					int i,j;
+					for (i=0; i<DEGREE-1; i++) 
+						for (j=0; j<BLOOMVEC; j++) 
+							dc18_SendNum(gBloom[i][j]);
+				}
 			}
     }
     
@@ -300,33 +307,50 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
    		if (gSW == SW_1) badge_state = DEFCON;
    		else if (gUSB_EN) {
 		    if (gSW == SW_0) {
-				// trigger WEB OF TRUST in other 
+				// trigger WEB OF TRUST in other
+				int i;
 				uint32_t rBloomID = 0;
 				BloomHashBase hash[SALTS];
-				uint32_t found = 0;
 				Term_SendChar('?');
 				rBloomID = dc18_ReadNum();
 				dc18_SendNum(rBloomID);
-				Term_SendChar('\n');
+				Term_SendStr("\n\r");
 				bloom_CalcHashes(rBloomID, hash);
 				dc18_SendNum(hash[0]);
-				Term_SendChar('\n');
+				Term_SendStr("\n\r");
 				dc18_SendNum(hash[1]);
-				Term_SendChar('\n');
+				Term_SendStr("\n\r");
 				dc18_SendNum(hash[2]);
-				Term_SendChar('\n');
+				Term_SendStr("\n\r");
 				// TODO: check all degrees
-				found = bloom_check(hash, gBloom[0]);
-				dc18_SendNum(found);
+				for (i=0; i<DEGREE; i++) 
+				{
+					if (bloom_check(hash, gBloom[i]))
+					{
+						Term_SendStr("Found at degree ");
+						Term_SendChar((uint8_t)('0' + i));
+						Term_SendStr("\n\r");
+					}
+				}
 				Term_SendChar('\n');
 		    } else if (gSW == SW_BOTH) {
+		        int i,j;
 				BloomHashBase hash[SALTS];
 				uint32_t rBloomID = 0;
 				Term_SendChar('?');
 				rBloomID = dc18_ReadNum();
 				bloom_CalcHashes(rBloomID, hash);
 				bloom_set(hash, gBloom[0]);
-				// TODO: do same for their remotes
+				Term_SendChar('!');
+				for (i=1;i<DEGREE; i++) 
+				{
+					for(j=0; j < BLOOMVEC; j++) 
+					{
+						BloomVecBase val = dc18_ReadNum();
+						gBloom[i][j] |= val;
+					}
+				}
+				Term_SendStr("Thanks\n\r");
 		    } else gSTATE_CHANGE = FALSE;
 		} else gSTATE_CHANGE = FALSE;
 		break;
