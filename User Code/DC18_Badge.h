@@ -34,8 +34,8 @@
 #define SW_BOTH		0b11
 
 #define SALTS 3
-#define DEGREE 3
-#define BLOOMVEC 76
+#define DEGREE 4
+#define BLOOMVEC 16
 
 
 /**************************************************************************
