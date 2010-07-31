@@ -2,8 +2,11 @@
 
 
 my $attendees = shift @ARGV;
+my $percentError = shift @ARGV;
 
-my ($m, $k) = _calculate_shortest_filter_length( $attendees, 0.1 );
+$percentError = $percentError / 100;
+
+my ($m, $k) = _calculate_shortest_filter_length( $attendees, $percentError );
 print "Lowest m: $m\n";
 print "Best k: $k\n";
 exit(0);
