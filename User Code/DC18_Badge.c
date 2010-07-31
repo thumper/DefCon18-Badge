@@ -617,9 +617,10 @@ uint32_t dc18_ReadNum()
 
 void dc18_BloomHashes(uint32_t rBloomID, uint32_t hash[SALTS])
 {
-	hash[0] = dc18_rng(311, rBloomID);
-	hash[1] = dc18_rng(997, rBloomID);
-	hash[2] = dc18_rng(0xDEADBEEF, rBloomID);
+	uint32_t mod = BLOOMVEC * 8;
+	hash[0] = dc18_rng(311, rBloomID) % mod;
+	hash[1] = dc18_rng(997, rBloomID) % mod;
+	hash[2] = dc18_rng(0xDEADBEEF, rBloomID) % mod;
 }
 
 /**************************************************************/
