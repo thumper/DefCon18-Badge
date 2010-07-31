@@ -35,6 +35,7 @@
 
 #define SALTS 3
 
+
 /**************************************************************************
 ************************** Macros *****************************************
 ***************************************************************************/
@@ -58,12 +59,7 @@ typedef enum
 	WEBOFTRUST
 } badge_state_type;
 
-typedef enum
-{
-	TOP = 0,
-	MIDDLE = 1,
-	BOTTOM = 2
-} tumbler_state_type;
+
 
 /***********************************************************************
  ************************** Function prototypes ************************
@@ -75,15 +71,12 @@ void dc18_change_state(void);
 
 void dc18_clear_fb(void);
 void dc18_load_image(uint16_t image_num);
-void dc18_load_tumblers(void); 
 void dc18_update_lcd(void);
 void dc18_usb_send_ack(void);
 
 void dc18_init(void);
 void dc18_sleep(void);
 
-int dc18_ninja_validate(unsigned long val); 
-uint32_t dc18_encode_tumblers(tumbler_state_type *tumblers); 
 
 void SendChar(uint8_t);
 //void SendMsg(uint8_t *msg);
@@ -92,7 +85,12 @@ void Delay(uint16_t ms);
 uint32_t dc18_rng(uint32_t salt, uint32_t seed);
 void dc18_SendNum(uint32_t b);
 uint32_t dc18_ReadNum();
-void dc18_BloomHashes(uint32_t rBloomID, uint32_t hash[SALTS]);
+typedef uint16_t BloomHashBase;
+typedef uint16_t BloomVecBase;
+void bloom_CalcHashes(uint32_t rBloomID, BloomHashBase hash[SALTS]);
+short bloom_check(BloomHashBase hash[], BloomVecBase vec[]);
+void bloom_set(BloomHashBase hash[], BloomVecBase vec[]);
+
 
 
 

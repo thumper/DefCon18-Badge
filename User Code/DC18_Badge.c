@@ -40,8 +40,6 @@ uint8_t gFB[BYTES_PER_IMAGE]; // frame buffer
 // Icons
 uint16_t	gLoc; 				// current image location 
 uint16_t	gIconIdx; 		// index into icon array
-tumbler_state_type 	gTumblerIdx;	  // current position of tumbler
-tumbler_state_type  gTumblers[15];	// setting of each tumbler
 
 // Flags
 uint16_t 	gSTATE_CHANGE = TRUE; // If TRUE, need to redraw the screen since state has changed
@@ -50,12 +48,10 @@ uint16_t 	gUSB_EN; 							// HIGH if USB is connected, LOW if no USB
 
 // bloom filter
 #define DEGREES	4
-#define BLOOMVEC	151		// 500 people with 10% error
-uint16_t	gBloom[DEGREES][BLOOMVEC];
-uint8_t		gBloomDegree, gBloomByte;
+#define BLOOMVEC	76		// 500 people with 10% error
+BloomVecBase	gBloom[DEGREES][BLOOMVEC];
+uint8_t		gBloomDegree;
 uint32_t	gBloomID = 0;
-uint32_t	gRNG = 0;
-uint32_t	gBloomSalts[SALTS];
 uint32_t	gRNGseed = 0;
 
 /****************************************************************************
@@ -308,26 +304,30 @@ void dc18_change_state(void)
 		    if (gSW == SW_0) {
 				// trigger WEB OF TRUST in other 
 				uint32_t rBloomID = 0;
-				uint32_t hash[SALTS];
+				BloomHashBase hash[SALTS];
+				uint32_t found = 0;
 				Term_SendChar('?');
 				rBloomID = dc18_ReadNum();
 				dc18_SendNum(rBloomID);
 				Term_SendChar('\n');
-				dc18_BloomHashes(rBloomID, hash);
+				bloom_CalcHashes(rBloomID, hash);
 				dc18_SendNum(hash[0]);
 				Term_SendChar('\n');
 				dc18_SendNum(hash[1]);
 				Term_SendChar('\n');
 				dc18_SendNum(hash[2]);
 				Term_SendChar('\n');
-			// TODO: check bloom filters for rBloomID
+				// TODO: check all degrees
+				found = bloom_check(hash,gBloom[0]);
+				dc18_SendNum(found);
+				Term_SendChar('\n');
 		    } else if (gSW == SW_BOTH) {
+				BloomHashBase hash[SALTS];
 				uint32_t rBloomID = 0;
 				Term_SendChar('?');
 				rBloomID = dc18_ReadNum();
-				
-				// TODO: calc bloom filter
-				// TODO: add into our array
+				bloom_CalcHashes(rBloomID, hash);
+				bloom_set(hash,gBloom[0]);
 				// TODO: do same for their remotes
 		    } else gSTATE_CHANGE = FALSE;
 		} else gSTATE_CHANGE = FALSE;
@@ -364,41 +364,7 @@ void dc18_load_image(uint16_t image_num)
 
 /**************************************************************/
 
-void dc18_load_tumblers(void)
-{
-  uint16_t i, j, k;
-  uint16_t tmp[4];
-    
-  tmp[0] = tmp[1] = tmp[2] = tmp[3] = 0xFF; 
-  
-	for (i = 0; i < TUMBLER_WIDTH; ++i) 
-	{
-	  j = dc18Tumbler[i];
-	  k = dc18Tumbler[i + TUMBLER_WIDTH];
-	  
-		if (gTumblerIdx == TOP)
-		{
-			tmp[0] = j; 
-	  	tmp[1] = k;
-		}
-		else if (gTumblerIdx == BOTTOM)
-		{
-	  	tmp[2] = j; 
-  		tmp[3] = k;		
-		}
-		else // gTumblerIdx == MIDDLE
-		{
-		  tmp[1] = j; 
-	  	tmp[2] = k;
-		}		
 
-		j = gLoc * 6;
-	 	gFB[(33 + i) + j] = (uint8_t)tmp[0]; 
-	 	gFB[(161 + i) + j] = (uint8_t)tmp[1];
-		gFB[(289 + i) + j] = (uint8_t)tmp[2];
-	 	gFB[(417 + i) + j] = (uint8_t)tmp[3]; 				
- 	}    
-}	 	
 	 	
 /**************************************************************/
 
@@ -498,14 +464,39 @@ uint32_t dc18_ReadNum()
     return num;
 }
 
-void dc18_BloomHashes(uint32_t rBloomID, uint32_t hash[SALTS])
+void bloom_CalcHashes(uint32_t rBloomID, BloomHashBase hash[SALTS])
 {
-	uint32_t mod = BLOOMVEC * 8;
-	hash[0] = dc18_rng(311, rBloomID) % mod;
-	hash[1] = dc18_rng(997, rBloomID) % mod;
-	hash[2] = dc18_rng(0xDEADBEEF, rBloomID) % mod;
+	uint32_t mod = BLOOMVEC * sizeof(BloomVecBase) * 8;
+	hash[0] = (BloomHashBase) (dc18_rng(311, rBloomID) % mod);
+	hash[1] = (BloomHashBase) (dc18_rng(997, rBloomID) % mod);
+	hash[2] = (BloomHashBase) (dc18_rng(0xDEADBEEF, rBloomID) % mod);
 }
 
+short bloom_check(BloomHashBase hash[], BloomVecBase vec[])
+{
+	int i;
+	int bitsize = sizeof(BloomVecBase) * 8;
+	for (i=0; i<SALTS; i++) 
+	{
+		uint32_t vecPos = hash[i] / bitsize;
+		uint32_t vecBit = hash[i] % bitsize;
+		if (!(vec[vecPos] & ((BloomVecBase)1<<vecBit)))
+		    return 0;
+	}
+	return 1;
+}
+
+void bloom_set(BloomHashBase hash[], BloomVecBase vec[])
+{
+	int i;
+	int bitsize = sizeof(BloomVecBase) * 8;
+	for (i=0; i<SALTS; i++) 
+	{
+		uint32_t vecPos = hash[i] / bitsize;
+		uint32_t vecBit = hash[i] % bitsize;
+		vec[vecPos] |=((BloomVecBase)1<<vecBit);
+	}
+}
 
 
 /**************************************************************
