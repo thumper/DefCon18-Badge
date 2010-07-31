@@ -325,7 +325,7 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 				Term_SendChar('?');
 				rBloomID = dc18_ReadNum();
 				bloom_CalcHashes(rBloomID, hash);
-//				bloom_set(hash, gBloom[0]);
+				bloom_set(hash, gBloom[0]);
 				// TODO: do same for their remotes
 		    } else gSTATE_CHANGE = FALSE;
 		} else gSTATE_CHANGE = FALSE;
