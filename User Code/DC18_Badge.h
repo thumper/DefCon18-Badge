@@ -33,6 +33,7 @@
 #define	SW_1			0b10
 #define SW_BOTH		0b11
 
+#define SALTS 3
 
 /**************************************************************************
 ************************** Macros *****************************************
@@ -88,7 +89,11 @@ void SendChar(uint8_t);
 //void SendMsg(uint8_t *msg);
 void Delay(uint16_t ms);
 
-uint32_t dc18_rng();
+uint32_t dc18_rng(uint32_t salt, uint32_t seed);
+void dc18_SendNum(uint32_t b);
+uint32_t dc18_ReadNum();
+void dc18_BloomHashes(uint32_t rBloomID, uint32_t hash[SALTS]);
+
 
 
 /**************************************************************************

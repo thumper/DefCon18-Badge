@@ -26,8 +26,6 @@
 #include "DC18_Badge.h"
 #include "DC18_LCD.h"
 #include "DC18_Graphics.h"
-#include "sha1.h"
-
 
 /****************************************************************************
  ************************** Global variables ********************************
@@ -58,7 +56,6 @@ uint16_t	gBloom[DEGREES][BLOOMVEC];
 uint8_t		gBloomDegree, gBloomByte;
 uint32_t	gBloomID = 0;
 uint32_t	gRNG = 0;
-#define SALTS	3
 uint32_t	gBloomSalts[SALTS];
 uint32_t	gRNGseed = 0;
 
@@ -229,22 +226,11 @@ void dc18_badge(void)
 				Term_ReadChar(&c); 	 // ...then get it
 				if (c == '#') badge_state = USB; // enter USB mode if requested
 				if (c == '?') {
-#if 0
-				    Term_SendChar((uint8_t) (gBloomID & 0xFF));
-				    Term_SendChar((uint8_t) ((gBloomID>>8) & 0xFF));
-				    Term_SendChar((uint8_t) ((gBloomID>>16) & 0xFF));
-				    Term_SendChar((uint8_t) ((gBloomID>>24) & 0xFF));
-#else
-				    int i;
 				    uint32_t b;
-					if (!gBloomID) gBloomID = dc18_rng();
+					if (!gBloomID)
+						gBloomID = gRNGseed = dc18_rng(311, gRNGseed);
 				    b = gBloomID;
-				    for (i=0; i<32; i+=4) {
-					uint32_t d = (b >> 28-i) & 0xF;
-					if (d < 10) Term_SendChar((uint8_t)('0'+d));
-					else Term_SendChar((uint8_t)('A'-10+d));
-				    }
-#endif
+				    dc18_SendNum(gBloomID);
 				}
 			}
     }
@@ -252,7 +238,7 @@ void dc18_badge(void)
     dc18_get_buttons();	 // Set gSW flags based on button presses	
 		dc18_change_state(); // Change state, if necessary
 	if (gSW != 0 && !gBloomID) 
-	    gBloomID = dc18_rng();
+	    gBloomID = gRNGseed = dc18_rng(311, gRNGseed);
   }
 }
 
@@ -291,7 +277,6 @@ void dc18_change_state(void)
 {
   uint16_t i;
   uint32_t t;
-  uint8_t c;
   
  	gSTATE_CHANGE = TRUE; 	
 
@@ -351,35 +336,30 @@ void dc18_change_state(void)
    		if (gSW == SW_1) badge_state = DEFCON;
    		else if (gUSB_EN) {
 		    if (gSW == SW_0) {
-			// trigger WEB OF TRUST in other 
-			uint32_t rBloomID = 0;
-			Term_SendChar('?');
-			Term_ReadChar(&c);
-			rBloomID |= c;
-			Term_ReadChar(&c);
-			rBloomID |= ((uint32_t)c << 8);
-			Term_ReadChar(&c);
-			rBloomID |= ((uint32_t)c << 16);
-			Term_ReadChar(&c);
-			rBloomID |= ((uint32_t)c << 24);
-
+				// trigger WEB OF TRUST in other 
+				uint32_t rBloomID = 0;
+				uint32_t hash[SALTS];
+				Term_SendChar('?');
+				rBloomID = dc18_ReadNum();
+				dc18_SendNum(rBloomID);
+				Term_SendChar('\n');
+				dc18_BloomHashes(rBloomID, hash);
+				dc18_SendNum(hash[0]);
+				Term_SendChar('\n');
+				dc18_SendNum(hash[1]);
+				Term_SendChar('\n');
+				dc18_SendNum(hash[2]);
+				Term_SendChar('\n');
 			// TODO: check bloom filters for rBloomID
 		    } else if (gSW == SW_BOTH) {
-			uint32_t rBloomID = 0;
-			Term_SendChar('?');
-			Term_ReadChar(&c);
-			rBloomID |= c;
-			Term_ReadChar(&c);
-			rBloomID |= ((uint32_t)c << 8);
-			Term_ReadChar(&c);
-			rBloomID |= ((uint32_t)c << 16);
-			Term_ReadChar(&c);
-			rBloomID |= ((uint32_t)c << 24);
-
-			// TODO: calc bloom filter
-			// TODO: add into our array
-			// TODO: do same for their remotes
-		    }
+				uint32_t rBloomID = 0;
+				Term_SendChar('?');
+				rBloomID = dc18_ReadNum();
+				
+				// TODO: calc bloom filter
+				// TODO: add into our array
+				// TODO: do same for their remotes
+		    } else gSTATE_CHANGE = FALSE;
 		} else gSTATE_CHANGE = FALSE;
 		break;
 	case NINJA:
@@ -605,11 +585,42 @@ void dc18_sleep(void)
 }
 
 
-uint32_t dc18_rng() {
-    gRNGseed = 311 * 117 * gRNGseed * gRNGseed;
-    return gRNGseed;
+uint32_t dc18_rng(uint32_t salt, uint32_t seed) {
+    seed = salt * 117 * seed * seed;
+    return seed;
 }
 
+void dc18_SendNum(uint32_t b) 
+{
+    int i;
+	for (i=0; i<32; i+=4) {
+		uint32_t d = (b >> 28-i) & 0xF;
+		if (d < 10) Term_SendChar((uint8_t)('0'+d));
+		else Term_SendChar((uint8_t)('A'-10+d));
+	}
+}
+
+uint32_t dc18_ReadNum()
+{
+    uint8_t c;
+	uint32_t num = 0;
+	Term_ReadChar(&c);
+	num |= c;
+	Term_ReadChar(&c);
+	num |= ((uint32_t)c << 8);
+	Term_ReadChar(&c);
+	num |= ((uint32_t)c << 16);
+	Term_ReadChar(&c);
+	num |= ((uint32_t)c << 24);
+    return num;
+}
+
+void dc18_BloomHashes(uint32_t rBloomID, uint32_t hash[SALTS])
+{
+	hash[0] = dc18_rng(311, rBloomID);
+	hash[1] = dc18_rng(997, rBloomID);
+	hash[2] = dc18_rng(0xDEADBEEF, rBloomID);
+}
 
 /**************************************************************/
 /* NINJA ROUTINES
