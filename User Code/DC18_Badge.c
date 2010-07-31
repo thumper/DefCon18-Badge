@@ -26,6 +26,7 @@
 #include "DC18_Badge.h"
 #include "DC18_LCD.h"
 #include "DC18_Graphics.h"
+#include "sha1.h"
 
 
 /****************************************************************************
@@ -55,7 +56,8 @@ uint8_t 	gNINJA_EN = 0x00; 		// 0 if Ninja Badge functionality has been unlocked
 #define BLOOMVEC	151		// 500 people with 10% error
 uint16_t	gBloom[DEGREES][BLOOMVEC];
 uint8_t		gBloomDegree, gBloomByte;
-uint32_t	gBloomID;
+uint32_t	gBloomID = 0;
+uint32_t	gRNG = 0;
 #define SALTS	3
 uint32_t	gBloomSalts[SALTS];
 
@@ -67,12 +69,14 @@ void dc18_badge(void)
 { 
   uint8_t c;
   uint16_t i, j;
+  uint32_t RNG = 0;
 	
 	dc18_init(); // hardware initialization
 	
   // begin operation
   while(1)
-  {  	
+  {
+    RNG++;
   	switch (badge_state)
   	{
   		case DEFCON:
@@ -245,6 +249,15 @@ void dc18_badge(void)
     
     dc18_get_buttons();	 // Set gSW flags based on button presses	
 		dc18_change_state(); // Change state, if necessary
+	if (gSW != 0 && gBloomID == 0) 
+	{
+		char *s = "abc\0";
+		uint32_t *t = (uint32_t *)s;
+		sha1(*t, 0x0);
+
+
+	    gBloomID = sha1(RNG, 0xDEADBEEF);
+	}
   }
 }
 
