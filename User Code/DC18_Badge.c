@@ -202,9 +202,13 @@ void dc18_badge(void)
 				if (c == '!') 
 				{
 					int i,j;
-					for (i=0; i<DEGREE-1; i++) 
+					// send all but last two
+					for (i=0; i<DEGREE-2; i++) 
 						for (j=0; j<BLOOMVEC; j++) 
 							dc18_SendNum(gBloom[i][j]);
+					// merge last two filters together
+					for (j=0; j<BLOOMVEC; j++) 
+						dc18_SendNum((gBloom[DEGREE-2][j] | gBloom[DEGREE-1][j]));
 				}
 			}
     }
@@ -342,15 +346,18 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 				bloom_CalcHashes(rBloomID, hash);
 				bloom_set(hash, gBloom[0]);
 				Term_SendChar('!');
+				// read remote filters, as +1 degree
 				for (i=1;i<DEGREE; i++) 
 				{
+dc18_SendNum(i);
+Term_SendStr("\n\r");
 					for(j=0; j < BLOOMVEC; j++) 
 					{
 						BloomVecBase val = dc18_ReadNum();
 						gBloom[i][j] |= val;
 					}
 				}
-				Term_SendStr("Thanks\n\r");
+Term_SendStr("Thanks\n\r");
 		    } else gSTATE_CHANGE = FALSE;
 		} else gSTATE_CHANGE = FALSE;
 		break;
