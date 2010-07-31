@@ -47,7 +47,6 @@ tumbler_state_type  gTumblers[15];	// setting of each tumbler
 uint16_t 	gSTATE_CHANGE = TRUE; // If TRUE, need to redraw the screen since state has changed
 uint16_t 	gSW = 0; 							// State of buttons (HIGH = currently pressed), bit 1 = SW1, bit 0 = SW0 
 uint16_t 	gUSB_EN; 							// HIGH if USB is connected, LOW if no USB
-uint8_t 	gNINJA_EN = 0x00; 		// 0 if Ninja Badge functionality has been unlocked, 0xFF otherwise
 
 // bloom filter
 #define DEGREES	4
@@ -128,32 +127,6 @@ void dc18_badge(void)
   		case AKA:
   			dc18_load_image(5);		  	
   			break;	  
-  		case NINJA:
-  			if (gNINJA_EN != 0) dc18_load_image(2); // locked
-  			else dc18_load_image(3);								// unlocked
-  			break;
-  		case EIGHTEEN:
-  		  // load icon on left side of display
-				for (i = 0; i < BYTES_PER_GLYPH_PAGE; ++i) 
-				{
-				  gFB[1 + i] = dc18Ninja[i];
-				  gFB[129 + i] = dc18Ninja[i + BYTES_PER_GLYPH_PAGE];
-				  gFB[257 + i] = dc18Ninja[i + (BYTES_PER_GLYPH_PAGE << 1)];				   		
-				  gFB[385 + i] = dc18Ninja[i + (BYTES_PER_GLYPH_PAGE * 3)]; 				
- 				}  			 		    		  
-  		  if (gNINJA_EN == 0) // if already unlocked, display tumblers
-  		  {
-  		  	for (gLoc = 0; gLoc < TUMBLERS_PER_IMAGE; ++gLoc)
-					{
-					  gTumblerIdx = gTumblers[gLoc]; // get stored tumbler position 
-					  dc18_load_tumblers();
-					}	  
-  		  }
-  		  else // otherwise, let the user configure the tumblers
-  		  {
-					dc18_load_tumblers();					  		  
-  		  }
-  		  break;
 		case WEBOFTRUST:
 		    dc18_clear_fb();
 		    break;
@@ -275,10 +248,7 @@ void dc18_get_buttons(void)
 
 void dc18_change_state(void)
 {
-  uint16_t i;
-  uint32_t t;
-  
- 	gSTATE_CHANGE = TRUE; 	
+  gSTATE_CHANGE = TRUE; 	
 
   switch (badge_state) 
  	{
@@ -324,7 +294,7 @@ void dc18_change_state(void)
 			else gSTATE_CHANGE = FALSE;
 			break;
    	case BY:
-   		if (gSW == SW_1) badge_state = NINJA;
+   		if (gSW == SW_1) badge_state = WEBOFTRUST;
    		else if (gSW == SW_0) badge_state = AKA;
    		else gSTATE_CHANGE = FALSE;   		
  			break;
@@ -362,93 +332,6 @@ void dc18_change_state(void)
 		    } else gSTATE_CHANGE = FALSE;
 		} else gSTATE_CHANGE = FALSE;
 		break;
-	case NINJA:
-   		if (gSW == SW_1) {
-		    badge_state = WEBOFTRUST;
-		    gBloomDegree = 0;
-		    gBloomByte = 0;
-   		} else if (gSW == SW_0)
-   		{
-   			// clear frame buffer and variables in preparation for the next state
-   			dc18_clear_fb();
-   			gLoc = 0; 
-   			gTumblerIdx = MIDDLE;
-   		  badge_state = EIGHTEEN;
-   		}
-   		else if (gSW == SW_BOTH)
-   		{
-   			// display indication that we are transmitting/blocking
-   			// (indicator is cleared automatically when we return to main loop)
-   			for (i = 0; i < TX_ICON_WIDTH; ++i)
-				{
-	 				gFB[1 + i] = (uint8_t)dc18TX[i]; 
-	 				gFB[129 + i] = (uint8_t)dc18TX[i + TX_ICON_WIDTH];
-				}
-				dc18_update_lcd();
-
-				if (gNINJA_EN == 0)
-					t = dc18_encode_tumblers(gTumblers); // encode tumbler states into 24-bit value
-				else
-					t = 0; // badge is still locked, so transmit three NULLs instead of valid code
-															
-				// transmit code via bit-banged serial port 
-				// for ~15 seconds (1200bps / 64 bits/message = 18.75 messages/s)
-				for (i = 0; i < 227; ++i)
-				{				
-					SendChar('N');
-					SendChar('I');
-					SendChar('N');
-					SendChar('J');
-					SendChar('A');
-					SendChar((unsigned char)((t >> 16) & 0xFF)); // MSB first
-					SendChar((unsigned char)((t >> 8) & 0xFF));
-					SendChar((unsigned char)(t & 0xFF));
-				} 							
-   		}
-			else gSTATE_CHANGE = FALSE;
-			break;
-		case EIGHTEEN:	
-			if (gNINJA_EN == 0) // unlocked
-			{
-				if (gSW == SW_0) badge_state = NINJA;
-				else gSTATE_CHANGE = FALSE;
-			}
-			else // locked
-			{
-			  if (gSW == SW_1)
-	  		{ 
-	  			if (gTumblerIdx == MIDDLE) gTumblerIdx = TOP; // change tumbler position
-	  			else if (gTumblerIdx == BOTTOM) gTumblerIdx = MIDDLE; 
-	  		}
-	  		else if (gSW == SW_0)
-	  		{
-					if (gTumblerIdx == MIDDLE) gTumblerIdx = BOTTOM;
-					else if (gTumblerIdx == TOP) gTumblerIdx = MIDDLE; 
-	  		}
-	  		else if (gSW == SW_BOTH)
-	  		{
-  		    gTumblers[gLoc] = gTumblerIdx; // store current position
-
-	  		  if (gLoc < TUMBLERS_PER_IMAGE - 1)
-	  		  {
-	  			  ++gLoc; 											 // move to next image location
-	  			  gTumblerIdx = MIDDLE; 				 // set to default position
-	  			}
-	  			else
-	  			{  			  
-	  				// all tumblers have been set...
-						t = dc18_encode_tumblers(gTumblers); // encode tumbler states into 24-bit value
-	  				if (dc18_ninja_validate(t) == 1)  	 // check for validity
-	  					gNINJA_EN = 0; 										 // if valid, ninja mode unlocked!
-	  				else
-	  					gNINJA_EN = 0xFF;									 // else we stay locked. boo hoo. 
-	  			
-						badge_state = NINJA;			
-	  			}
-	  		}			
-				else gSTATE_CHANGE = FALSE;			
-			}
-			break;
 	  case USB:
 	    if (gSW == SW_1) badge_state = DEFCON;
 			else gSTATE_CHANGE = FALSE;
@@ -621,39 +504,6 @@ void dc18_BloomHashes(uint32_t rBloomID, uint32_t hash[SALTS])
 	hash[0] = dc18_rng(311, rBloomID) % mod;
 	hash[1] = dc18_rng(997, rBloomID) % mod;
 	hash[2] = dc18_rng(0xDEADBEEF, rBloomID) % mod;
-}
-
-/**************************************************************/
-/* NINJA ROUTINES
-/**************************************************************/
-
-int dc18_ninja_validate(uint32_t val) 
-{
-    uint16_t a, b;
-    
-    a = (uint16_t)(val & 0xfff);
-    b = (uint16_t)(val >> 12);
-    
-    if((a ^ b) == 0x916) 
-    {
-        return 1;
-    }
-    return 0;
-}
-
-// encode tumbler states into 24-bit value
-uint32_t dc18_encode_tumblers(tumbler_state_type *tumblers) 
-{
-    uint32_t x = 0, j = 1;
-    uint16_t i;
-    
-    for(i = 0; i < TUMBLERS_PER_IMAGE; i++) 
-    {
-        x += tumblers[i] * j;
-        j *= 3;
-    }
-    
-    return x;
 }
 
 
