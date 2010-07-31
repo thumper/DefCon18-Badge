@@ -55,7 +55,7 @@ uint8_t 	gNINJA_EN = 0x00; 		// 0 if Ninja Badge functionality has been unlocked
 #define BLOOMVEC	151		// 500 people with 10% error
 uint16_t	gBloom[DEGREES][BLOOMVEC];
 uint8_t		gBloomDegree, gBloomByte;
-uint32_t	gBloomID = 6661337;
+uint32_t	gBloomID;
 #define SALTS	3
 uint32_t	gBloomSalts[SALTS];
 
@@ -225,10 +225,20 @@ void dc18_badge(void)
 				Term_ReadChar(&c); 	 // ...then get it
 				if (c == '#') badge_state = USB; // enter USB mode if requested
 				if (c == '?') {
+#if 0
 				    Term_SendChar((uint8_t) (gBloomID & 0xFF));
 				    Term_SendChar((uint8_t) ((gBloomID>>8) & 0xFF));
 				    Term_SendChar((uint8_t) ((gBloomID>>16) & 0xFF));
 				    Term_SendChar((uint8_t) ((gBloomID>>24) & 0xFF));
+#else
+				    int i;
+				    uint32_t b = gBloomID;
+				    for (i=0; i<32; i+=4) {
+					uint32_t d = (b >> 28-i) & 0xF;
+					if (d < 10) Term_SendChar((uint8_t)('0'+d));
+					else Term_SendChar((uint8_t)('A'-10+d));
+				    }
+#endif
 				}
 			}
     }

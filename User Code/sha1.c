@@ -22,6 +22,7 @@ A million repetitions of "a"
 #define SHA1HANDSOFF
 
 #include <stdint.h>
+#include "Term.h"
 #include "sha1.h"
 
 /* ================ sha1.h ================ */
@@ -236,7 +237,7 @@ uint8_t c;
 uint32_t sha1(uint32_t id, uint32_t salt)
 {
     SHA1_CTX ctx;
-    uint8_t hash[20], buf[BUFSIZE];
+    uint8_t hash[21], buf[BUFSIZE];
     uint32_t i, result;
     for (i = 0; i < 4; i++) {
 	buf[i] = (uint8_t) ((id >> (i*8)) & 0xFF);
@@ -246,6 +247,8 @@ uint32_t sha1(uint32_t id, uint32_t salt)
     for(i=0;i<1000;i++)
         SHA1Update(&ctx, buf, BUFSIZE);
     SHA1Final(hash, &ctx);
+hash[20] = '\0';
+Term_SendStr(hash);
     result = 0;
     for(i=0;i<5;i++) {
 	uint32_t num = hash[4*i]
