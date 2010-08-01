@@ -324,7 +324,7 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
    		else if (gUSB_EN) {
 		    if (gSW == SW_0) {
 				// trigger WEB OF TRUST in other
-				int i;
+				int i, found;
 				uint32_t rBloomID = 0;
 				BloomHashBase hash[SALTS];
 				Term_SendChar('?');
@@ -333,26 +333,31 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 #ifdef DEBUG
 				Term_SendStr("received ID = ");
 				dc18_SendNum(rBloomID);
-				Term_SendStr("\n\r");
+				Term_SendStr("\n\rHash1=");
 				dc18_SendNum(hash[0]);
-				Term_SendStr("\n\r");
+				Term_SendStr("\n\rHash2=");
 				dc18_SendNum(hash[1]);
-				Term_SendStr("\n\r");
+				Term_SendStr("\n\rHash3=");
 				dc18_SendNum(hash[2]);
 				Term_SendStr("\n\r");
 #endif
-				// TODO: check all degrees
+				found = 0;
 				for (i=0; i<DEGREE; i++) 
 				{
 					if (bloom_check(hash, gBloom[i]))
 					{
+						found = i+1;
 #ifdef DEBUG
 						Term_SendStr("Found at degree ");
-						Term_SendChar((uint8_t)('0' + i));
+						Term_SendChar((uint8_t)('0' + found));
 						Term_SendStr("\n\r");
 #endif
 					}
 				}
+#ifdef DEBUG
+				if (!found)
+					Term_SendStr("Not found.\n\r");
+#endif
 		    } else if (gSW == SW_BOTH) {
 		        int i,j;
 				BloomHashBase hash[SALTS];
