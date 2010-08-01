@@ -96,6 +96,7 @@ int main(int argc, char *argv[]) {
 	}
 cerr << "Found both devices.  shuffling data." << endl;
 	try {
+	    int lastfd = 0;
 	    while (tty.size() == 2) {
 		// listen on both fds
 		fd_set readfds;
@@ -115,7 +116,12 @@ cerr << "Found both devices.  shuffling data." << endl;
 			int bytes = read(tty[i]._fd, buf, sizeof(buf));
 			if (bytes <= 0) throw Err("reading error");
 			write(tty[1-i]._fd, buf, bytes);
-			write(1, buf, bytes);
+			if (lastfd != tty[i]._fd) {
+			    cout << endl << "<fd_" << tty[i]._fd << "> ";
+			    lastfd = tty[i]._fd;
+			}
+			buf[bytes] = '\0';
+			cout << buf;
 		    }
 		}
 	    }
