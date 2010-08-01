@@ -72,6 +72,7 @@ void dc18_badge(void)
   while(1)
   {
 	gRNGseed++;
+	if (gRNGseed % 1000 == 0) Term_SendStr(".");
   	switch (badge_state)
   	{
   		case DEFCON:
