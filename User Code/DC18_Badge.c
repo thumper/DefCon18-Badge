@@ -60,6 +60,9 @@ void dc18_badge(void)
   BloomVecBase	gBloom[DEGREE][BLOOMVEC];
   uint8_t c;
   uint16_t i, j;
+  for (i=0;i<DEGREE;i++)
+    for (j=0;j<BLOOMVEC;j++)
+      gBloom[i][j] = 0;
 	
 	dc18_init(); // hardware initialization
 	
@@ -198,17 +201,23 @@ void dc18_badge(void)
 						gBloomID = gRNGseed = dc18_rng(311, gRNGseed);
 				    b = gBloomID;
 				    dc18_SendNum(gBloomID);
+dc18_load_image(5);
+dc18_update_lcd();
 				}
 				if (c == '!') 
 				{
 					int i,j;
 					// send all but last two
 					for (i=0; i<DEGREE-2; i++) 
+					{
 						for (j=0; j<BLOOMVEC; j++) 
 							dc18_SendNum(gBloom[i][j]);
+	Term_SendStr("\n\r");
+					}
 					// merge last two filters together
 					for (j=0; j<BLOOMVEC; j++) 
 						dc18_SendNum((gBloom[DEGREE-2][j] | gBloom[DEGREE-1][j]));
+	Term_SendStr("\n\r");
 				}
 			}
     }
