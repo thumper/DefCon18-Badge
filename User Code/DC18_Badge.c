@@ -27,6 +27,8 @@
 #include "DC18_LCD.h"
 #include "DC18_Graphics.h"
 
+#define DEBUG 1
+
 /****************************************************************************
  ************************** Global variables ********************************
  ***************************************************************************/
@@ -201,8 +203,6 @@ void dc18_badge(void)
 						gBloomID = gRNGseed = dc18_rng(311, gRNGseed);
 				    b = gBloomID;
 				    dc18_SendNum(gBloomID);
-dc18_load_image(5);
-dc18_update_lcd();
 				}
 				if (c == '!') 
 				{
@@ -211,16 +211,18 @@ dc18_update_lcd();
 					for (i=0; i<DEGREE-2; i++) 
 					{
 						for (j=0; j<BLOOMVEC; j++) 
+						{
 							dc18_SendNum(gBloom[i][j]);
-	Term_SendStr("\n\r");
+						}
 					}
 					// merge last two filters together
 					for (j=0; j<BLOOMVEC; j++) 
+					{
 						dc18_SendNum((gBloom[DEGREE-2][j] | gBloom[DEGREE-1][j]));
-	Term_SendStr("\n\r");
+					}
 				}
 			}
-    }
+		}
     
     dc18_get_buttons();	 // Set gSW flags based on button presses	
 		dc18_change_state(gBloom); // Change state, if necessary
@@ -326,26 +328,30 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 				BloomHashBase hash[SALTS];
 				Term_SendChar('?');
 				rBloomID = dc18_ReadNum();
+				bloom_CalcHashes(rBloomID, hash);
+#ifdef DEBUG
+				Term_SendStr("received ID = ");
 				dc18_SendNum(rBloomID);
 				Term_SendStr("\n\r");
-				bloom_CalcHashes(rBloomID, hash);
 				dc18_SendNum(hash[0]);
 				Term_SendStr("\n\r");
 				dc18_SendNum(hash[1]);
 				Term_SendStr("\n\r");
 				dc18_SendNum(hash[2]);
 				Term_SendStr("\n\r");
+#endif
 				// TODO: check all degrees
 				for (i=0; i<DEGREE; i++) 
 				{
 					if (bloom_check(hash, gBloom[i]))
 					{
+#ifdef DEBUG
 						Term_SendStr("Found at degree ");
 						Term_SendChar((uint8_t)('0' + i));
 						Term_SendStr("\n\r");
+#endif
 					}
 				}
-				Term_SendChar('\n');
 		    } else if (gSW == SW_BOTH) {
 		        int i,j;
 				BloomHashBase hash[SALTS];
@@ -358,15 +364,24 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 				// read remote filters, as +1 degree
 				for (i=1;i<DEGREE; i++) 
 				{
-dc18_SendNum(i);
-Term_SendStr("\n\r");
 					for(j=0; j < BLOOMVEC; j++) 
 					{
 						BloomVecBase val = dc18_ReadNum();
 						gBloom[i][j] |= val;
 					}
 				}
-Term_SendStr("Thanks\n\r");
+#ifdef DEBUG
+				Term_SendStr("Thanks.  My filters now look like:\n\r");
+				for (i=0; i<DEGREE; i++) 
+				{
+					Term_SendStr("degree ");
+					dc18_SendNum(i);
+					Term_SendStr(": ");
+					for(j=0; j<BLOOMVEC; j++)
+						dc18_SendNum(gBloom[i][j]);
+					Term_SendStr("\n\r");
+				}
+#endif
 		    } else gSTATE_CHANGE = FALSE;
 		} else gSTATE_CHANGE = FALSE;
 		break;
@@ -473,7 +488,7 @@ void dc18_sleep(void)
 
 
 uint32_t dc18_rng(uint32_t salt, uint32_t seed) {
-    seed = salt * 117 * seed * seed;
+    seed = seed * 117 + salt;
     return seed;
 }
 
@@ -490,15 +505,18 @@ void dc18_SendNum(uint32_t b)
 uint32_t dc18_ReadNum()
 {
     uint8_t c;
+    int bits;
 	uint32_t num = 0;
-	Term_ReadChar(&c);
-	num |= c;
-	Term_ReadChar(&c);
-	num |= ((uint32_t)c << 8);
-	Term_ReadChar(&c);
-	num |= ((uint32_t)c << 16);
-	Term_ReadChar(&c);
-	num |= ((uint32_t)c << 24);
+	int i;
+	for (i = 0; i<32; i+=4) 
+	{
+		Term_ReadChar(&c);
+		if (c >= 'A')
+			bits = 10 + (c - 'A');
+		else
+			bits = c-'0';
+		num |= ((uint32_t)bits) << (28-i);
+	}
     return num;
 }
 
