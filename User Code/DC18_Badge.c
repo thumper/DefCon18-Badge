@@ -63,8 +63,10 @@ void dc18_badge(void)
   uint8_t c;
   uint16_t i, j;
   for (i=0;i<DEGREE;i++)
-    for (j=0;j<BLOOMVEC;j++)
+    for (j=0;j<BLOOMVEC;j++) {
+      gRNGseed = gRNGseed ^ gBloom[i][j];
       gBloom[i][j] = 0;
+    }
 	
 	dc18_init(); // hardware initialization
 	
