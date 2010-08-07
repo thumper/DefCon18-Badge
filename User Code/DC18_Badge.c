@@ -199,11 +199,7 @@ void dc18_badge(void)
 				Term_ReadChar(&c); 	 // ...then get it
 				if (c == '#') badge_state = USB; // enter USB mode if requested
 				if (c == '?') {
-				    uint32_t b;
-					if (!gBloomID)
-						gBloomID = gRNGseed = dc18_rng(311, gRNGseed);
-				    b = gBloomID;
-				    dc18_SendNum(gBloomID);
+				    dc18_SendNum(bloom_getId());
 				}
 				if (c == '!') 
 				{
@@ -228,7 +224,7 @@ void dc18_badge(void)
     dc18_get_buttons();	 // Set gSW flags based on button presses	
 		dc18_change_state(gBloom); // Change state, if necessary
 	if (gSW != 0 && !gBloomID) 
-	    gBloomID = gRNGseed = dc18_rng(311, gRNGseed);
+	    bloom_getId();
   }
 }
 
@@ -270,13 +266,16 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
   switch (badge_state) 
  	{
    	case DEFCON:
-   		if (gSW == SW_1) badge_state = JOEGRAND;
+   		if (gSW == SW_1) 
+   		{
+   			badge_state = WEBOFTRUST;
+   			dc18_clear_fb();
+   		}
 			else if (gSW == SW_0) 
    		{
    			// clear frame buffer and variables in preparation for the next state
    			dc18_clear_fb(); 
-   			gLoc = 0;
-   			gIconIdx = 0;
+   			draw_medium(18, gRow, gCol);
    			badge_state = BADGE;
    		}
 			else gSTATE_CHANGE = FALSE;
@@ -284,47 +283,33 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 		case BADGE:
 		  if (gSW == SW_1)
   		{ 
-  			++gIconIdx; // point to next icon
-  		  if (gIconIdx >= NUM_GLYPHS) gIconIdx = 0; // wrap-around
+  				draw_medium(17, gRow, gCol);
+  				if (gRow > 0) gRow--;
+  				draw_medium(18, gRow, gCol);
+  				dc18_update_lcd();
+  				gSTATE_CHANGE = FALSE;
   		}
   		else if (gSW == SW_0)
   		{
-  		  if (gIconIdx == 0) gIconIdx = NUM_GLYPHS; // wrap-around backwards
-  		  --gIconIdx; // point to next icon
+  				draw_medium(17, gRow, gCol);
+  				if (gRow < 32 - MED_DIGIT_HEIGHT-1) gRow++;
+  				draw_medium(18, gRow, gCol);
+  				dc18_update_lcd();
+  				gSTATE_CHANGE = FALSE;
   		}
   		else if (gSW == SW_BOTH)
   		{
-  		  if (gLoc < GLYPHS_PER_IMAGE - 1)
-  			  ++gLoc; // move to next image location
-  			else
-  				badge_state = DEFCON; // if all glyphs have been entered, go to the next state
+ 				badge_state = DEFCON;
   		}
 			else gSTATE_CHANGE = FALSE;
 			break;
-   	case JOEGRAND:
-   		if (gSW == SW_1) badge_state = BY;
-   		else if (gSW == SW_BOTH) badge_state = KINGPIN;   		
-   		else gSTATE_CHANGE = FALSE;   		
-   		break;     	
-		case KINGPIN:
-   		if (gSW == SW_0) badge_state = JOEGRAND;
-			else gSTATE_CHANGE = FALSE;
-			break;
-   	case BY:
-   		if (gSW == SW_1) badge_state = WEBOFTRUST;
-   		else if (gSW == SW_0) badge_state = AKA;
-   		else gSTATE_CHANGE = FALSE;   		
- 			break;
-		case AKA:
-   		if (gSW == SW_0) badge_state = BY;
-   		else gSTATE_CHANGE = FALSE; 			
-   		break; 			
 	case WEBOFTRUST:
    		if (gSW == SW_1) badge_state = DEFCON;
    		else if (gUSB_EN) {
 		    if (gSW == SW_0) {
 				// trigger WEB OF TRUST in other
 				int i, found;
+				uint16_t col;
 				uint32_t rBloomID = 0;
 				BloomHashBase hash[SALTS];
 				Term_SendChar('?');
@@ -341,12 +326,23 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 				dc18_SendNum(hash[2]);
 				Term_SendStr("\n\r");
 #endif
+				// clear old level digits
+				col = 100;
+				for (i=0; i<DEGREE; i++) 
+				{
+					draw_medium(17, 10, col);
+					col += MED_DIGIT_WIDTH+1;
+				}
+				// and now show levels
 				found = 0;
+				col = 100;
 				for (i=0; i<DEGREE; i++) 
 				{
 					if (bloom_check(hash, gBloom[i]))
 					{
 						found = i+1;
+						draw_medium(found, 10, col);
+						col += MED_DIGIT_WIDTH+1;
 #ifdef DEBUG
 						Term_SendStr("Found at degree ");
 						Term_SendChar((uint8_t)('0' + found));
@@ -354,10 +350,15 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 #endif
 					}
 				}
-#ifdef DEBUG
 				if (!found)
+				{
+					draw_medium(16, 10, col);
+#ifdef DEBUG
 					Term_SendStr("Not found.\n\r");
 #endif
+				}
+				dc18_update_lcd();
+				gSTATE_CHANGE = FALSE;
 		    } else if (gSW == SW_BOTH) {
 		        int i,j;
 				BloomHashBase hash[SALTS];
@@ -508,6 +509,16 @@ void dc18_SendNum(uint32_t b)
 	}
 }
 
+void draw_Num(uint32_t b, uint8_t row, uint16_t col) 
+{
+    int i;
+	for (i=0; i<32; i+=4) {
+		uint32_t d = (b >> 28-i) & 0xF;
+		draw_medium((int)d, row, col);
+		col += MED_DIGIT_WIDTH + 1;
+	}
+}
+
 uint32_t dc18_ReadNum()
 {
     uint8_t c;
@@ -560,6 +571,72 @@ void bloom_set(BloomHashBase hash[], BloomVecBase vec[])
 	}
 }
 
+uint32_t bloom_getId() {
+    if (!gBloomID) {
+	gRNGseed *= (gRNGseed + 17);
+	gRNGseed = gRNGseed >> 5;
+	gBloomID = gRNGseed = dc18_rng(311, gRNGseed);
+    }
+    return gBloomID;
+}
+
+
+// Write a small digit to the framebuffer
+void draw_medium(int c, uint8_t row, uint16_t col)
+{
+    uint8_t i;
+    uint8_t off;
+    off = (uint8_t)c; // (uint8_t) (c - '0');
+    for (i = 0; i < MED_DIGIT_HEIGHT; i++)
+    {
+	stripe_write(med_digit_art[off][i], MED_DIGIT_WIDTH, col, (uint8_t) (i + row),
+		(uint8_t) (i + row));
+    }
+
+}
+
+
+
+/**
+ * Write a bar code down the frame buffer.
+ */
+void stripe_write(unsigned char block, uint16_t block_length, uint16_t start, uint8_t start_height, uint8_t end_height)
+{
+    uint16_t col = start + block_length - 1;
+    uint8_t i;
+    while (block_length> 0)
+    {
+	uint8_t set = (uint8_t) (block%2);
+	for (i = start_height; i <= end_height; i++)
+	{
+	    set_point(i, col, set);
+	}
+
+	block >>= 1;
+	col--;
+	block_length--;
+    }
+}
+
+
+/* Turn on a point in the frame buffer.  The FB is 
+   mapped according to a non-obvious scheme from the 
+   datasheet.  val=0 for clear, 1 for set. */
+void set_point(uint8_t row, uint16_t col, uint8_t val)
+{
+	// 0 is "black" (set) in hardware
+
+	uint16_t byte = col + ((row / 8) * 128);
+	unsigned mask = 1;
+	mask <<= (row % 8);
+	if (val) {
+		// set to 0
+		gFB[byte] &= ~mask;
+	} else {
+		// set to 1
+		gFB[byte] |= mask;
+	}
+}
 
 /**************************************************************
 /* INTERRUPT SERVICE ROUTINES
