@@ -277,6 +277,7 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
    		{
    			// clear frame buffer and variables in preparation for the next state
    			dc18_clear_fb(); 
+			// draw the initial paddle
    			draw_medium(18, gRow, gCol);
    			badge_state = BADGE;
    		}
@@ -284,17 +285,21 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
  			break;
 		case BADGE:
 		  if (gSW == SW_1)
-  		{ 
+  		{
+				// erase paddle (draw 'space')
   				draw_medium(17, gRow, gCol);
   				if (gRow > 0) gRow--;
+				// and draw new paddle
   				draw_medium(18, gRow, gCol);
   				dc18_update_lcd();
   				gSTATE_CHANGE = FALSE;
   		}
   		else if (gSW == SW_0)
   		{
+				// erase paddle (draw 'space')
   				draw_medium(17, gRow, gCol);
   				if (gRow < 32 - MED_DIGIT_HEIGHT-1) gRow++;
+				// and draw new paddle
   				draw_medium(18, gRow, gCol);
   				dc18_update_lcd();
   				gSTATE_CHANGE = FALSE;
