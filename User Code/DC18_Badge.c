@@ -10,7 +10,7 @@
 * Description:	Main File for the DEFCON 18 Badge (Freescale MC56F8006)
 * Notes:
 *
-* None yet!	
+* None yet!
 *******************************************************************************/
 
 /* Including needed modules to compile this module/procedure */
@@ -40,12 +40,12 @@ badge_state_type badge_state = DEFCON; // begin in main title/logo screen on pow
 uint8_t gFB[BYTES_PER_IMAGE]; // frame buffer
 
 // Icons
-uint16_t	gLoc; 				// current image location 
+uint16_t	gLoc; 				// current image location
 uint16_t	gIconIdx; 		// index into icon array
 
 // Flags
 uint16_t 	gSTATE_CHANGE = TRUE; // If TRUE, need to redraw the screen since state has changed
-uint16_t 	gSW = 0; 							// State of buttons (HIGH = currently pressed), bit 1 = SW1, bit 0 = SW0 
+uint16_t 	gSW = 0; 							// State of buttons (HIGH = currently pressed), bit 1 = SW1, bit 0 = SW0
 uint16_t 	gUSB_EN; 							// HIGH if USB is connected, LOW if no USB
 
 // bloom filter
@@ -58,7 +58,7 @@ uint32_t	gRNGseed = 0;
  ***************************************************************************/
 
 void dc18_badge(void)
-{ 
+{
   BloomVecBase	gBloom[DEGREE][BLOOMVEC];
   uint8_t c;
   uint16_t i, j;
@@ -67,9 +67,9 @@ void dc18_badge(void)
       gRNGseed = gRNGseed ^ gBloom[i][j];
       gBloom[i][j] = 0;
     }
-	
+
 	dc18_init(); // hardware initialization
-	
+
   // begin operation
   while(1)
   {
@@ -83,52 +83,52 @@ void dc18_badge(void)
   		case BADGE: // Glyph selection mode
    			/*
    				load icon image into the correct location in the frame buffer
-				
+
 					image location 0
-					page 2: gFB[1-30] 
-					page 3: gFB[129-158] 
-					page 4: gFB[257-286] 
-					page 5: gFB[385-414] 
+					page 2: gFB[1-30]
+					page 3: gFB[129-158]
+					page 4: gFB[257-286]
+					page 5: gFB[385-414]
 
 					image location 1
-					page 2: gFB[33-62] 
-					page 3: gFB[161-190] 
-					page 4: gFB[289-318] 
-					page 5: gFB[417-446] 
+					page 2: gFB[33-62]
+					page 3: gFB[161-190]
+					page 4: gFB[289-318]
+					page 5: gFB[417-446]
 
 					image location 2
-					page 2: gFB[65-94] 
+					page 2: gFB[65-94]
 					page 3: gFB[193-222]
 					page 4: gFB[321-350]
 					page 5: gFB[449-478]
 
 					image location 3
-					page 2: gFB[97-126] 
+					page 2: gFB[97-126]
 					page 3: gFB[225-254]
 					page 4: gFB[353-382]
 					page 5: gFB[481-510]
 				*/
-				for (i = 0; i < BYTES_PER_GLYPH_PAGE; ++i) 
+				for (i = 0; i < BYTES_PER_GLYPH_PAGE; ++i)
 				{
 				  j = gLoc << 5;
 				  gFB[(1 + i) + j] = dc18Glyphs[gIconIdx][i];
 				  gFB[(129 + i) + j] = dc18Glyphs[gIconIdx][i + BYTES_PER_GLYPH_PAGE];
-				  gFB[(257 + i) + j] = dc18Glyphs[gIconIdx][i + (BYTES_PER_GLYPH_PAGE << 1)];				   		
-				  gFB[(385 + i) + j] = dc18Glyphs[gIconIdx][i + (BYTES_PER_GLYPH_PAGE * 3)]; 				
- 				}  			  			
-  		  break;  			
+				  gFB[(257 + i) + j] = dc18Glyphs[gIconIdx][i + (BYTES_PER_GLYPH_PAGE << 1)];
+				  gFB[(385 + i) + j] = dc18Glyphs[gIconIdx][i + (BYTES_PER_GLYPH_PAGE * 3)];
+ 				}
+  		  break;
   		case JOEGRAND:
-  			dc18_load_image(1);	
-  			break;	
+  			dc18_load_image(1);
+  			break;
   		case KINGPIN:
-  			dc18_load_image(6);		  	
+  			dc18_load_image(6);
   			break;
   		case BY:
-  			dc18_load_image(4);		  	
+  			dc18_load_image(4);
   			break;
   		case AKA:
-  			dc18_load_image(5);		  	
-  			break;	  
+  			dc18_load_image(5);
+  			break;
 		case WEBOFTRUST:
 		    dc18_clear_fb();
 		    break;
@@ -147,9 +147,9 @@ void dc18_badge(void)
 								break;
 							case 'U': // Update LCD
 						 	  dc18_update_lcd();
-								dc18_usb_send_ack();								
+								dc18_usb_send_ack();
 								break;
-							case 'L': // Load byte into frame buffer (refer to Kent Displays' 128x32 Reflex Graphic Display Module 
+							case 'L': // Load byte into frame buffer (refer to Kent Displays' 128x32 Reflex Graphic Display Module
 												// data sheet 25138B pg. 9 for memory map)
 												// Valid byte locations 0x000 (0) to 0x1FF (511)
 												// 0 = pixel on (dark), 1 = pixel off (bright)
@@ -158,7 +158,7 @@ void dc18_badge(void)
 								Term_ReadChar(&c); // These three values are raw hex bytes, NOT ASCII
 								i = (uint16_t)c << 8;
 								Term_ReadChar(&c);
-								i |= (uint16_t)c; 
+								i |= (uint16_t)c;
 								Term_ReadChar(&c);
 								if (i < BYTES_PER_IMAGE) gFB[i] = c; // load value 'c' into LCD byte location 'i'
   		  				dc18_usb_send_ack();
@@ -167,15 +167,15 @@ void dc18_badge(void)
 								dc18_usb_send_ack();
 							  badge_state = DEFCON;
 			    			dc18_load_image(0); // move image from program memory into frame buffer
-								dc18_update_lcd();  // force update 
+								dc18_update_lcd();  // force update
 								gUSB_EN = 0; 				// set flag to 0 to escape the while() loop
 							  break;
 						}
 					}
 				}
-				break;	    			  			  							  			
+				break;
 		}
-    			
+
 		if (gSTATE_CHANGE)
 		{
 			gSTATE_CHANGE = FALSE;
@@ -186,46 +186,46 @@ void dc18_badge(void)
 			gUSB_EN = FALSE;
 		else
 			gUSB_EN = TRUE;
-	
+
    	if (!gUSB_EN) // if we are running on battery power...
-   	{ 
+   	{
     	LED1_PutVal(OFF); // turn off USB indicator LED
     	dc18_sleep(); 		// sleep until external interrupt
 		}
 		else // USB is plugged in, so stay awake to receive and process commands
 		{
     	LED1_PutVal(ON); 				 // turn on USB indicator LED
- 			
+
 			if (Term_KeyPressed()) // if there's a byte waiting in the rx queue...
-			{	
+			{
 				Term_ReadChar(&c); 	 // ...then get it
 				if (c == '#') badge_state = USB; // enter USB mode if requested
 				if (c == '?') {
 				    dc18_SendNum(bloom_getId());
 				}
-				if (c == '!') 
+				if (c == '!')
 				{
 					int i,j;
 					// send all but last two
-					for (i=0; i<DEGREE-2; i++) 
+					for (i=0; i<DEGREE-2; i++)
 					{
-						for (j=0; j<BLOOMVEC; j++) 
+						for (j=0; j<BLOOMVEC; j++)
 						{
 							dc18_SendNum(gBloom[i][j]);
 						}
 					}
 					// merge last two filters together
-					for (j=0; j<BLOOMVEC; j++) 
+					for (j=0; j<BLOOMVEC; j++)
 					{
 						dc18_SendNum((gBloom[DEGREE-2][j] | gBloom[DEGREE-1][j]));
 					}
 				}
 			}
 		}
-    
-    dc18_get_buttons();	 // Set gSW flags based on button presses	
+
+    dc18_get_buttons();	 // Set gSW flags based on button presses
 		dc18_change_state(gBloom); // Change state, if necessary
-	if (gSW != 0 && !gBloomID) 
+	if (gSW != 0 && !gBloomID)
 	    bloom_getId();
   }
 }
@@ -237,7 +237,7 @@ void dc18_get_buttons(void)
 {
   uint8_t sw0, sw1;
 
-	// check for button presses 
+	// check for button presses
   sw0 = !EINT_SW0_GetVal();
   sw1 = !EINT_SW1_GetVal();
 
@@ -248,14 +248,14 @@ void dc18_get_buttons(void)
  		sw0 = !EINT_SW0_GetVal();
   	sw1 = !EINT_SW1_GetVal();
 	}
-	
-  if (sw0 && sw1) 
+
+  if (sw0 && sw1)
   	gSW = SW_BOTH; // set flags accordingly
-  else if (sw0)		
+  else if (sw0)
   	gSW = SW_0;		 // the first person
-  else if (sw1)		
+  else if (sw1)
   	gSW = SW_1;		 // to request freebird at hacker karaoke
-  else					  
+  else
   	gSW = SW_NONE; // skips to the front of the line
 }
 
@@ -263,20 +263,20 @@ void dc18_get_buttons(void)
 
 void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 {
-  gSTATE_CHANGE = TRUE; 	
+  gSTATE_CHANGE = TRUE;
 
-  switch (badge_state) 
+  switch (badge_state)
  	{
    	case DEFCON:
-   		if (gSW == SW_1) 
+   		if (gSW == SW_1)
    		{
    			badge_state = WEBOFTRUST;
    			dc18_clear_fb();
    		}
-			else if (gSW == SW_0) 
+			else if (gSW == SW_0)
    		{
    			// clear frame buffer and variables in preparation for the next state
-   			dc18_clear_fb(); 
+   			dc18_clear_fb();
 			// draw the initial paddle
    			draw_medium(18, gRow, gCol);
    			badge_state = BADGE;
@@ -335,7 +335,7 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 #endif
 				// clear old level digits
 				col = 100;
-				for (i=0; i<DEGREE; i++) 
+				for (i=0; i<DEGREE; i++)
 				{
 					draw_medium(17, 10, col);
 					col += MED_DIGIT_WIDTH+1;
@@ -343,7 +343,7 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 				// and now show levels
 				found = 0;
 				col = 100;
-				for (i=0; i<DEGREE; i++) 
+				for (i=0; i<DEGREE; i++)
 				{
 					if (bloom_check(hash, gBloom[i]))
 					{
@@ -376,9 +376,9 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 				bloom_set(hash, gBloom[0]);
 				Term_SendChar('!');
 				// read remote filters, as +1 degree
-				for (i=1;i<DEGREE; i++) 
+				for (i=1;i<DEGREE; i++)
 				{
-					for(j=0; j < BLOOMVEC; j++) 
+					for(j=0; j < BLOOMVEC; j++)
 					{
 						BloomVecBase val = dc18_ReadNum();
 						gBloom[i][j] |= val;
@@ -386,7 +386,7 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 				}
 #ifdef DEBUG
 				Term_SendStr("Thanks.  My filters now look like:\n\r");
-				for (i=0; i<DEGREE; i++) 
+				for (i=0; i<DEGREE; i++)
 				{
 					Term_SendStr("degree ");
 					dc18_SendNum(i);
@@ -415,7 +415,7 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 void dc18_clear_fb(void)
 {
 	uint16_t i;
-	
+
   for (i = 0; i < BYTES_PER_IMAGE; ++i) gFB[i] = 0xFF;
 }
 
@@ -425,27 +425,27 @@ void dc18_clear_fb(void)
 void dc18_load_image(uint16_t image_num)
 {
   uint16_t i;
-  
+
   for (i = 0; i < BYTES_PER_IMAGE; ++i) gFB[i] = dc18Images[image_num][i];
 }
 
 /**************************************************************/
 
 
-	 	
+
 /**************************************************************/
 
 void dc18_update_lcd(void)
 {
-  // Transfer the local image buffer to display RAM, setting the border bright (off).  
+  // Transfer the local image buffer to display RAM, setting the border bright (off).
   LoadData(0, BYTES_PER_IMAGE, (uint8_t*)gFB);
-  LoadBorder(1);  
-  
-  // Perform a full-screen update of the display.  This  
-  // will power-down the display driver when finished.  
-  Display(0, N_ROWS); 
-  
-  // Set driver SPI communications signals low.  
+  LoadBorder(1);
+
+  // Perform a full-screen update of the display.  This
+  // will power-down the display driver when finished.
+  Display(0, N_ROWS);
+
+  // Set driver SPI communications signals low.
   ZeroSPILines();
 }
 
@@ -466,36 +466,36 @@ void dc18_init(void) // hardware initialization
 	// LED
 	LED0_PutVal(OFF);
 	LED1_PutVal(OFF);
-		  	
+
 	// LCD
 	HardResetDisplay();	// reset the driver
 
-	Cpu_EnableInt();  // we're ready for action, so re-enable global interrupts 
+	Cpu_EnableInt();  // we're ready for action, so re-enable global interrupts
 }
 
 
 /**************************************************************/
 
-void dc18_sleep(void) 
+void dc18_sleep(void)
 {
 	Inhr6_TurnRxOff(); // disable RX buffer of Term bean to prevent spurious entry during sleep
-	
+
  	// set GPIOA6/TXD to input before going to sleep to prevent back-powering the FT232RL
   GPIO_A_PUR &= ~GPIO_A_PUR_PU6_MASK; // disable A6 pull-up
   GPIO_A_DDR &= ~GPIO_A_DDR_DD6_MASK; // set as input
   GPIO_A_PER &= ~GPIO_A_PER_PE6_MASK; // set to GPIO mode
- 
+
   OCCS_DIVBY |= OCCS_DIVBY_COD3_MASK; // Divide peripheral clock by 256 (1xxx) (15.625kHz @ 8MHz ROSC, ~781Hz @ 400kHz ROSC)
   PMC_SCR |= PMC_SCR_LPR_MASK; 				// Request low-power run/wait mode
-     
+
 	Cpu_SetWaitMode(); // Awake on the next external interrupt from SW0 or SW1
 
-  PMC_SCR &= ~PMC_SCR_LPR_MASK;					// Disable low-power run/wait mode 
+  PMC_SCR &= ~PMC_SCR_LPR_MASK;					// Disable low-power run/wait mode
   OCCS_DIVBY &= ~OCCS_DIVBY_COD3_MASK;	// Restore original peripheral clock divider
 
-	// re-enable GPIOA6/TXD to back-power the FT232RL to allow us to read the correct #PWREN value 
+	// re-enable GPIOA6/TXD to back-power the FT232RL to allow us to read the correct #PWREN value
 	// (to determine if USB is connected or not)
- 	GPIO_A_PER |= GPIO_A_PER_PE6_MASK; // set to peripheral mode 	
+ 	GPIO_A_PER |= GPIO_A_PER_PE6_MASK; // set to peripheral mode
 
 	Inhr6_TurnRxOn(); // re-enable RX buffer now that we're awake
 }
@@ -506,7 +506,7 @@ uint32_t dc18_rng(uint32_t salt, uint32_t seed) {
     return seed;
 }
 
-void dc18_SendNum(uint32_t b) 
+void dc18_SendNum(uint32_t b)
 {
     int i;
 	for (i=0; i<32; i+=4) {
@@ -516,7 +516,7 @@ void dc18_SendNum(uint32_t b)
 	}
 }
 
-void draw_Num(uint32_t b, uint8_t row, uint16_t col) 
+void draw_Num(uint32_t b, uint8_t row, uint16_t col)
 {
     int i;
 	for (i=0; i<32; i+=4) {
@@ -532,7 +532,7 @@ uint32_t dc18_ReadNum()
     int bits;
 	uint32_t num = 0;
 	int i;
-	for (i = 0; i<32; i+=4) 
+	for (i = 0; i<32; i+=4)
 	{
 		Term_ReadChar(&c);
 		if (c >= 'A')
@@ -556,7 +556,7 @@ short bloom_check(BloomHashBase hash[], BloomVecBase vec[])
 {
 	int i;
 	int bitsize = sizeof(BloomVecBase) * 8;
-	for (i=0; i<SALTS; i++) 
+	for (i=0; i<SALTS; i++)
 	{
 		uint32_t vecPos = hash[i] / bitsize;
 		uint32_t vecBit = hash[i] % bitsize;
@@ -570,7 +570,7 @@ void bloom_set(BloomHashBase hash[], BloomVecBase vec[])
 {
 	int i;
 	int bitsize = sizeof(BloomVecBase) * 8;
-	for (i=0; i<SALTS; i++) 
+	for (i=0; i<SALTS; i++)
 	{
 		uint32_t vecPos = hash[i] / bitsize;
 		uint32_t vecBit = hash[i] % bitsize;
@@ -626,8 +626,8 @@ void stripe_write(unsigned char block, uint16_t block_length, uint16_t start, ui
 }
 
 
-/* Turn on a point in the frame buffer.  The FB is 
-   mapped according to a non-obvious scheme from the 
+/* Turn on a point in the frame buffer.  The FB is
+   mapped according to a non-obvious scheme from the
    datasheet.  val=0 for clear, 1 for set. */
 void set_point(uint8_t row, uint16_t col, uint8_t val)
 {
@@ -680,24 +680,24 @@ void SendChar(uint8_t data)
   		SOUT1_PutVal(HIGH);
     else
   		SOUT1_PutVal(LOW);
-         
+
     data >>= 1;
-    
+
     Cpu_Delay100US(8);
   }
-  
+
   // stop bit
   SOUT1_PutVal(HIGH);
-  Cpu_Delay100US(8); 
-}    
-      
-/*void SendMsg(uint8_t *msg) 
+  Cpu_Delay100US(8);
+}
+
+/*void SendMsg(uint8_t *msg)
 {
   uint8_t ix = 0;	   // String pointer
   uint8_t nxt_char;
-  
+
   nxt_char = msg[ix++];
-  while(nxt_char != 0x00) 
+  while(nxt_char != 0x00)
   {
     SendChar(nxt_char);
     nxt_char = msg[ix++];
@@ -713,7 +713,7 @@ void SendChar(uint8_t data)
 *	Simple delay loops
 * These are not very accurate because they could get interrupted
 **************************************************************/
- 
+
 void Delay(uint16_t ms)  // delay the specified number of milliseconds
 {
   uint16_t i;
