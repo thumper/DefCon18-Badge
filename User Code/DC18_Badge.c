@@ -80,57 +80,11 @@ void dc18_badge(void)
   		case DEFCON:
   			dc18_load_image(0); // move image from program memory into frame buffer
   			break;
-  		case BADGE: // Glyph selection mode
-   			/*
-   				load icon image into the correct location in the frame buffer
-
-					image location 0
-					page 2: gFB[1-30]
-					page 3: gFB[129-158]
-					page 4: gFB[257-286]
-					page 5: gFB[385-414]
-
-					image location 1
-					page 2: gFB[33-62]
-					page 3: gFB[161-190]
-					page 4: gFB[289-318]
-					page 5: gFB[417-446]
-
-					image location 2
-					page 2: gFB[65-94]
-					page 3: gFB[193-222]
-					page 4: gFB[321-350]
-					page 5: gFB[449-478]
-
-					image location 3
-					page 2: gFB[97-126]
-					page 3: gFB[225-254]
-					page 4: gFB[353-382]
-					page 5: gFB[481-510]
-				*/
-				for (i = 0; i < BYTES_PER_GLYPH_PAGE; ++i)
-				{
-				  j = gLoc << 5;
-				  gFB[(1 + i) + j] = dc18Glyphs[gIconIdx][i];
-				  gFB[(129 + i) + j] = dc18Glyphs[gIconIdx][i + BYTES_PER_GLYPH_PAGE];
-				  gFB[(257 + i) + j] = dc18Glyphs[gIconIdx][i + (BYTES_PER_GLYPH_PAGE << 1)];
-				  gFB[(385 + i) + j] = dc18Glyphs[gIconIdx][i + (BYTES_PER_GLYPH_PAGE * 3)];
- 				}
+  		case BADGE:
+  			dc18_clear_fb();
   		  break;
-  		case JOEGRAND:
-  			dc18_load_image(1);
-  			break;
-  		case KINGPIN:
-  			dc18_load_image(6);
-  			break;
-  		case BY:
-  			dc18_load_image(4);
-  			break;
-  		case AKA:
-  			dc18_load_image(5);
-  			break;
 		case WEBOFTRUST:
-		    dc18_clear_fb();
+  			dc18_clear_fb();
 		    break;
   		case USB:
 				Term_SendStr("Welcome to the DEFCON 18 Badge."); // send message so the user knows we're in USB mode now
@@ -268,135 +222,131 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
   switch (badge_state)
  	{
    	case DEFCON:
-	    if (gSW == SW_1) {
-		badge_state = WEBOFTRUST;
-		dc18_clear_fb();
-	    }
-	    else if (gSW == SW_0)
-	    {
-		// clear frame buffer and variables in preparation for the next state
-		dc18_clear_fb();
-		// draw the initial paddle
-		draw_medium(18, gRow, gCol);
-		badge_state = BADGE;
-	    }
-	    else gSTATE_CHANGE = FALSE;
-	    break;
+		if (gSW == SW_1) {
+			badge_state = WEBOFTRUST;
+			dc18_clear_fb();
+		}
+		else if (gSW == SW_0)
+		{
+			// clear frame buffer and variables in preparation for the next state
+			dc18_clear_fb();
+			// draw the initial paddle
+			draw_medium(18, gRow, gCol);
+			badge_state = BADGE;
+		}
+		else gSTATE_CHANGE = FALSE;
+		break;
 	case BADGE:
-	    if (gSW == SW_1) {
-		// erase paddle (draw 'space')
-		draw_medium(17, gRow, gCol);
-		if (gRow > 0) gRow--;
-		// and draw new paddle
-		draw_medium(18, gRow, gCol);
-		dc18_update_lcd();
-		gSTATE_CHANGE = FALSE;
-	    }
-	    else if (gSW == SW_0)
-	    {
-		// erase paddle (draw 'space')
-		draw_medium(17, gRow, gCol);
-		if (gRow < 32 - MED_DIGIT_HEIGHT-1) gRow++;
-		// and draw new paddle
-		draw_medium(18, gRow, gCol);
-		dc18_update_lcd();
-		gSTATE_CHANGE = FALSE;
-	    }
-	    else if (gSW == SW_BOTH)
-	    {
-		badge_state = DEFCON;
-	    }
-	    else gSTATE_CHANGE = FALSE;
-	    break;
+		if (gSW == SW_1) {
+			// erase paddle (draw 'space')
+			draw_medium(17, gRow, gCol);
+			if (gRow > 0) gRow--;
+			// and draw new paddle
+			draw_medium(18, gRow, gCol);
+			dc18_update_lcd();
+			gSTATE_CHANGE = FALSE;
+		}
+		else if (gSW == SW_0)
+		{
+			// erase paddle (draw 'space')
+			draw_medium(17, gRow, gCol);
+			if (gRow < 32 - MED_DIGIT_HEIGHT-1) gRow++;
+			// and draw new paddle
+			draw_medium(18, gRow, gCol);
+			dc18_update_lcd();
+			gSTATE_CHANGE = FALSE;
+		}
+		else if (gSW == SW_BOTH)
+		{
+			badge_state = DEFCON;
+		}
+		else gSTATE_CHANGE = FALSE;
+		break;
 	case WEBOFTRUST:
-	    if (gSW == SW_1) badge_state = DEFCON;
-	    else if (gUSB_EN) {
-		if (gSW == SW_0) {
-		    // trigger WEB OF TRUST in other
-		    int i, found;
-		    uint16_t col;
-		    uint32_t rBloomID = 0;
-		    BloomHashBase hash[SALTS];
-		    Term_SendChar('?');
-		    rBloomID = dc18_ReadNum();
-		    bloom_CalcHashes(rBloomID, hash);
+		if (gSW == SW_1) badge_state = DEFCON;
+		else if (gUSB_EN) {
+			if (gSW == SW_0) {
+				// trigger WEB OF TRUST in other
+				int i, found;
+				uint16_t col;
+				uint32_t rBloomID = 0;
+				BloomHashBase hash[SALTS];
+				Term_SendChar('?');
+				rBloomID = dc18_ReadNum();
+				bloom_CalcHashes(rBloomID, hash);
 #ifdef DEBUG
-		    Term_SendStr("received ID = ");
-		    dc18_SendNum(rBloomID);
-		    Term_SendStr("\n\rHash1=");
-		    dc18_SendNum(hash[0]);
-		    Term_SendStr("\n\rHash2=");
-		    dc18_SendNum(hash[1]);
-		    Term_SendStr("\n\rHash3=");
-		    dc18_SendNum(hash[2]);
-		    Term_SendStr("\n\r");
+				Term_SendStr("received ID = ");
+				dc18_SendNum(rBloomID);
+				Term_SendStr("\n\rHash1=");
+				dc18_SendNum(hash[0]);
+				Term_SendStr("\n\rHash2=");
+				dc18_SendNum(hash[1]);
+				Term_SendStr("\n\rHash3=");
+				dc18_SendNum(hash[2]);
+				Term_SendStr("\n\r");
 #endif
-		    // clear old level digits
-		    col = 100;
-		    for (i=0; i<DEGREE; i++)
-		    {
-			draw_medium(17, 10, col);
-			col += MED_DIGIT_WIDTH+1;
-		    }
-		    // and now show levels
-		    found = 0;
-		    col = 100;
-		    for (i=0; i<DEGREE; i++)
-		    {
-			if (bloom_check(hash, gBloom[i]))
-			{
-			    found = i+1;
-			    draw_medium(found, 10, col);
-			    col += MED_DIGIT_WIDTH+1;
+				// clear old level digits
+				col = 100;
+				for (i=0; i<DEGREE; i++) {
+					draw_medium(17, 10, col);
+					col += MED_DIGIT_WIDTH+1;
+				}
+				// and now show levels
+				found = 0;
+				col = 100;
+				for (i=0; i<DEGREE; i++) {
+					if (bloom_check(hash, gBloom[i])) {
+						found = i+1;
+						draw_medium(found, 10, col);
+						col += MED_DIGIT_WIDTH+1;
 #ifdef DEBUG
-			    Term_SendStr("Found at degree ");
-			    Term_SendChar((uint8_t)('0' + found));
-			    Term_SendStr("\n\r");
+						Term_SendStr("Found at degree ");
+						Term_SendChar((uint8_t)('0' + found));
+						Term_SendStr("\n\r");
 #endif
-			}
-		    }
-		    if (!found)
-		    {
-			draw_medium(16, 10, col);
+					}
+				}
+				if (!found) {
+					draw_medium(16, 10, col);
 #ifdef DEBUG
-			Term_SendStr("Not found.\n\r");
+					Term_SendStr("Not found.\n\r");
 #endif
-		    }
-		    dc18_update_lcd();
-		    gSTATE_CHANGE = FALSE;
-		} else if (gSW == SW_BOTH) {
-		    int i,j;
-		    BloomHashBase hash[SALTS];
-		    uint32_t rBloomID = 0;
-		    Term_SendChar('?');
-		    rBloomID = dc18_ReadNum();
-		    bloom_CalcHashes(rBloomID, hash);
-		    bloom_set(hash, gBloom[0]);
-		    Term_SendChar('!');
-		    // read remote filters, as +1 degree
-		    for (i=1;i<DEGREE; i++)
-		    {
-			for(j=0; j < BLOOMVEC; j++)
-			{
-			    BloomVecBase val = dc18_ReadNum();
-			    gBloom[i][j] |= val;
-			}
-		    }
+				}
+				dc18_update_lcd();
+				gSTATE_CHANGE = FALSE;
+			} else if (gSW == SW_BOTH) {
+				int i,j;
+				BloomHashBase hash[SALTS];
+				uint32_t rBloomID = 0;
+				Term_SendChar('?');
+				rBloomID = dc18_ReadNum();
+				bloom_CalcHashes(rBloomID, hash);
+				bloom_set(hash, gBloom[0]);
+				Term_SendChar('!');
+				// read remote filters, as +1 degree
+				for (i=1;i<DEGREE; i++)
+				{
+					for(j=0; j < BLOOMVEC; j++)
+					{
+						BloomVecBase val = dc18_ReadNum();
+						gBloom[i][j] |= val;
+					}
+				}
 #ifdef DEBUG
-		    Term_SendStr("Thanks.  My filters now look like:\n\r");
-		    for (i=0; i<DEGREE; i++)
-		    {
-			Term_SendStr("degree ");
-			dc18_SendNum(i);
-			Term_SendStr(": ");
-			for(j=0; j<BLOOMVEC; j++)
-			    dc18_SendNum(gBloom[i][j]);
-			Term_SendStr("\n\r");
-		    }
+				Term_SendStr("Thanks.  My filters now look like:\n\r");
+				for (i=0; i<DEGREE; i++)
+				{
+					Term_SendStr("degree ");
+					dc18_SendNum(i);
+					Term_SendStr(": ");
+					for(j=0; j<BLOOMVEC; j++)
+						dc18_SendNum(gBloom[i][j]);
+					Term_SendStr("\n\r");
+				}
 #endif
+			} else gSTATE_CHANGE = FALSE;
 		} else gSTATE_CHANGE = FALSE;
-	    } else gSTATE_CHANGE = FALSE;
-	    break;
+		break;
 	  case USB:
 	    if (gSW == SW_1) badge_state = DEFCON;
 			else gSTATE_CHANGE = FALSE;
@@ -500,103 +450,103 @@ void dc18_sleep(void)
 
 
 uint32_t dc18_rng(uint32_t salt, uint32_t seed) {
-    seed = seed * 117 + salt;
-    return seed;
+	seed = seed * 117 + salt;
+	return seed;
 }
 
 void dc18_SendNum(uint32_t b)
 {
-    int i;
-    for (i=0; i<32; i+=4) {
-	uint32_t d = (b >> 28-i) & 0xF;
-	if (d < 10) Term_SendChar((uint8_t)('0'+d));
-	else Term_SendChar((uint8_t)('A'-10+d));
-    }
+	int i;
+	for (i=0; i<32; i+=4) {
+		uint32_t d = (b >> 28-i) & 0xF;
+		if (d < 10) Term_SendChar((uint8_t)('0'+d));
+		else Term_SendChar((uint8_t)('A'-10+d));
+	}
 }
 
 void draw_Num(uint32_t b, uint8_t row, uint16_t col)
 {
-    int i;
-    for (i=0; i<32; i+=4) {
-	uint32_t d = (b >> 28-i) & 0xF;
-	draw_medium((int)d, row, col);
-	col += MED_DIGIT_WIDTH + 1;
-    }
+	int i;
+	for (i=0; i<32; i+=4) {
+		uint32_t d = (b >> 28-i) & 0xF;
+		draw_medium((int)d, row, col);
+		col += MED_DIGIT_WIDTH + 1;
+	}
 }
 
 uint32_t dc18_ReadNum()
 {
-    uint8_t c;
-    int bits;
-    uint32_t num = 0;
-    int i;
-    for (i = 0; i<32; i+=4)
-    {
-	Term_ReadChar(&c);
-	if (c >= 'A')
-	    bits = 10 + (c - 'A');
-	else
-	    bits = c-'0';
-	num |= ((uint32_t)bits) << (28-i);
-    }
-    return num;
+	uint8_t c;
+	int bits;
+	uint32_t num = 0;
+	int i;
+	for (i = 0; i<32; i+=4)
+	{
+		Term_ReadChar(&c);
+		if (c >= 'A')
+			bits = 10 + (c - 'A');
+		else
+			bits = c-'0';
+		num |= ((uint32_t)bits) << (28-i);
+	}
+	return num;
 }
 
 void bloom_CalcHashes(uint32_t rBloomID, BloomHashBase hash[SALTS])
 {
-    uint32_t mod = BLOOMVEC * sizeof(BloomVecBase) * 8;
-    hash[0] = (BloomHashBase) (dc18_rng(311, rBloomID) % mod);
-    hash[1] = (BloomHashBase) (dc18_rng(997, rBloomID) % mod);
-    hash[2] = (BloomHashBase) (dc18_rng(0xDEADBEEF, rBloomID) % mod);
+	uint32_t mod = BLOOMVEC * sizeof(BloomVecBase) * 8;
+	hash[0] = (BloomHashBase) (dc18_rng(311, rBloomID) % mod);
+	hash[1] = (BloomHashBase) (dc18_rng(997, rBloomID) % mod);
+	hash[2] = (BloomHashBase) (dc18_rng(0xDEADBEEF, rBloomID) % mod);
 }
 
 short bloom_check(BloomHashBase hash[], BloomVecBase vec[])
 {
-    int i;
-    int bitsize = sizeof(BloomVecBase) * 8;
-    for (i=0; i<SALTS; i++)
-    {
-	uint32_t vecPos = hash[i] / bitsize;
-	uint32_t vecBit = hash[i] % bitsize;
-	if (!(vec[vecPos] & ((BloomVecBase)1<<vecBit)))
-	    return 0;
-    }
-    return 1;
+	int i;
+	int bitsize = sizeof(BloomVecBase) * 8;
+	for (i=0; i<SALTS; i++)
+	{
+		uint32_t vecPos = hash[i] / bitsize;
+		uint32_t vecBit = hash[i] % bitsize;
+		if (!(vec[vecPos] & ((BloomVecBase)1<<vecBit)))
+			return 0;
+	}
+	return 1;
 }
 
 void bloom_set(BloomHashBase hash[], BloomVecBase vec[])
 {
-    int i;
-    int bitsize = sizeof(BloomVecBase) * 8;
-    for (i=0; i<SALTS; i++)
-    {
-	uint32_t vecPos = hash[i] / bitsize;
-	uint32_t vecBit = hash[i] % bitsize;
-	vec[vecPos] |=((BloomVecBase)1<<vecBit);
-    }
+	int i;
+	int bitsize = sizeof(BloomVecBase) * 8;
+	for (i=0; i<SALTS; i++)
+	{
+		uint32_t vecPos = hash[i] / bitsize;
+		uint32_t vecBit = hash[i] % bitsize;
+		vec[vecPos] |=((BloomVecBase)1<<vecBit);
+	}
 }
 
 uint32_t bloom_getId() {
-    if (!gBloomID) {
-	gRNGseed *= (gRNGseed + 17);
-	gRNGseed = gRNGseed >> 5;
-	gBloomID = gRNGseed = dc18_rng(311, gRNGseed);
-    }
-    return gBloomID;
+	if (!gBloomID) {
+		gRNGseed *= (gRNGseed + 17);
+		gRNGseed = gRNGseed >> 5;
+		gBloomID = gRNGseed = dc18_rng(311, gRNGseed);
+	}
+	return gBloomID;
 }
 
 
 // Write a small digit to the framebuffer
 void draw_medium(int c, uint8_t row, uint16_t col)
 {
-    uint8_t i;
-    uint8_t off;
-    off = (uint8_t)c; // (uint8_t) (c - '0');
-    for (i = 0; i < MED_DIGIT_HEIGHT; i++)
-    {
-	stripe_write(med_digit_art[off][i], MED_DIGIT_WIDTH, col, (uint8_t) (i + row),
-		(uint8_t) (i + row));
-    }
+	uint8_t i;
+	uint8_t off;
+	off = (uint8_t)c; // (uint8_t) (c - '0');
+	for (i = 0; i < MED_DIGIT_HEIGHT; i++)
+	{
+		stripe_write(med_digit_art[off][i], MED_DIGIT_WIDTH, col, (uint8_t) (i + row),
+				(uint8_t) (i + row));
+	}
 
 }
 
@@ -607,20 +557,20 @@ void draw_medium(int c, uint8_t row, uint16_t col)
  */
 void stripe_write(unsigned char block, uint16_t block_length, uint16_t start, uint8_t start_height, uint8_t end_height)
 {
-    uint16_t col = start + block_length - 1;
-    uint8_t i;
-    while (block_length> 0)
-    {
-	uint8_t set = (uint8_t) (block%2);
-	for (i = start_height; i <= end_height; i++)
+	uint16_t col = start + block_length - 1;
+	uint8_t i;
+	while (block_length> 0)
 	{
-	    set_point(i, col, set);
-	}
+		uint8_t set = (uint8_t) (block%2);
+		for (i = start_height; i <= end_height; i++)
+		{
+			set_point(i, col, set);
+		}
 
-	block >>= 1;
-	col--;
-	block_length--;
-    }
+		block >>= 1;
+		col--;
+		block_length--;
+	}
 }
 
 
@@ -629,18 +579,18 @@ void stripe_write(unsigned char block, uint16_t block_length, uint16_t start, ui
    datasheet.  val=0 for clear, 1 for set. */
 void set_point(uint8_t row, uint16_t col, uint8_t val)
 {
-    // 0 is "black" (set) in hardware
+	// 0 is "black" (set) in hardware
 
-    uint16_t byte = col + ((row / 8) * 128);
-    unsigned mask = 1;
-    mask <<= (row % 8);
-    if (val) {
-	// set to 0
-	gFB[byte] &= ~mask;
-    } else {
-	// set to 1
-	gFB[byte] |= mask;
-    }
+	uint16_t byte = col + ((row / 8) * 128);
+	unsigned mask = 1;
+	mask <<= (row % 8);
+	if (val) {
+		// set to 0
+		gFB[byte] &= ~mask;
+	} else {
+		// set to 1
+		gFB[byte] |= mask;
+	}
 }
 
 /**************************************************************
