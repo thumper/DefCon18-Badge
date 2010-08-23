@@ -1,4 +1,6 @@
+#include <stdio.h>
 #include <dirent.h>
+#include <string.h>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -64,8 +66,9 @@ int find_device() {
     struct dirent *file;
     while (file = readdir(dir)) {
 	if (file->d_name[0] == '.') continue;
-	if (strncmp("cu.usbserial-", file->d_name, 13))
-	   continue;
+	if (strncmp("cu.usbserial-", file->d_name, 13)
+		&& strncmp("ttyUSB", file->d_name, 6))
+	    continue;
 	string path("/dev");
 	path += "/";
 	path += file->d_name;
