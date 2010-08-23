@@ -53,6 +53,9 @@ uint8_t		gBloomDegree;
 uint32_t	gBloomID = 0;
 uint32_t	gRNGseed = 0;
 
+// Pong values
+uint8_t		gRow = 0, gCol = 0;
+
 /****************************************************************************
  ************************** Functions ***************************************
  ***************************************************************************/
@@ -84,7 +87,7 @@ void dc18_badge(void)
   			dc18_clear_fb();
   		  break;
 		case WEBOFTRUST:
-  			dc18_clear_fb();
+			draw_Num(bloom_getId(), 10, 10);
 		    break;
   		case USB:
 				Term_SendStr("Welcome to the DEFCON 18 Badge."); // send message so the user knows we're in USB mode now

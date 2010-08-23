@@ -72,6 +72,13 @@ typedef uint32_t BloomVecBase;
 void bloom_CalcHashes(uint32_t rBloomID, BloomHashBase hash[SALTS]);
 short bloom_check(BloomHashBase *hash, BloomVecBase vec[]);
 void bloom_set(BloomHashBase *hash, BloomVecBase vec[]);
+uint32_t bloom_getId();
+
+void draw_medium(int c, uint8_t row, uint16_t col);
+void stripe_write(unsigned char block, uint16_t block_length,
+	uint16_t start, uint8_t start_height, uint8_t end_height);
+void set_point(uint8_t row, uint16_t col, uint8_t val);
+void draw_Num(uint32_t b, uint8_t row, uint16_t col);
 
 
 void dc18_badge(void);
