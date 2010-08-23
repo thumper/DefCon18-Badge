@@ -1,0 +1,2 @@
+This is the source tree for my submission to the [Defcon18 Badge
+Hacking contest](http://www.grandideastudio.com/portfolio/defcon-18-badge/).
