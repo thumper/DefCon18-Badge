@@ -2,7 +2,7 @@
 PE_DesktopFileVersion=1077
 
 [Desktop]
-StartupPrj=Z:\thumper On My Mac\research\DEFCON-18-Badge\Extras\Firmware\User Code\DC18.pe
+StartupPrj=\\vmware-host\Shared Folders\thumper on SPCR\research\defcon\badge18\User Code\DC18.pe
 
 [PE_IDE_PlugIn]
 
