@@ -37,16 +37,11 @@ int ttyopen(const string &path, int speed = B9600) {
 
     struct termios termio;
     tcgetattr(fd, &termio);
+    cfmakeraw(&termio);
     cfsetispeed(&termio, speed);
     cfsetospeed(&termio, speed);
-    termio.c_cflag &= ~PARENB;
-    termio.c_cflag &= ~CSTOPB;
-    termio.c_cflag &= ~CSIZE;
-    termio.c_cflag |= CS8;
-    termio.c_cflag &= ~CRTSCTS;
-    termio.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
-    termio.c_iflag &= ~(IXON | IXOFF | IXANY);
-    termio.c_oflag &= ~OPOST;
+    termio.c_cflag &= ~CSTOPB;	    // one stop bit
+    termio.c_cflag &= ~CRTSCTS;	    // no hardware flow control
     termio.c_cc[VTIME] = 10;
     termio.c_cc[VMIN]  = 0;
     tcsetattr(fd, TCSANOW, &termio);
@@ -97,14 +92,14 @@ int main(int argc, char *argv[]) {
 	    find_device();
 	    sleep(1);
 	}
-cerr << "Found both devices.  shuffling data." << endl;
+	cerr << "Found both devices.  shuffling data." << endl;
 	try {
 	    int lastfd = 0;
 	    while (tty.size() == 2) {
 		// listen on both fds
 		fd_set readfds;
 		FD_ZERO(&readfds);
-		
+
 		int maxfd = 0;
 		for (int i=0; i<tty.size(); i++) {
 		    FD_SET(tty[i]._fd, &readfds);
@@ -124,7 +119,7 @@ cerr << "Found both devices.  shuffling data." << endl;
 			    lastfd = tty[i]._fd;
 			}
 			buf[bytes] = '\0';
-			cout << buf;
+			cout << buf << flush;
 		    }
 		}
 	    }
