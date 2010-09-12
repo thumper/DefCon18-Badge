@@ -76,6 +76,7 @@ void dc18_badge(void)
   // begin operation
   while(1)
   {
+    LED1_PutVal(OFF);
 	gRNGseed++;
 	if (gRNGseed % 1000 == 0) Term_SendStr(".");
   	switch (badge_state)
@@ -89,49 +90,9 @@ void dc18_badge(void)
 		case WEBOFTRUST:
 			draw_Num(bloom_getId(), 10, 10);
 		    break;
-  		case USB:
-				Term_SendStr("Welcome to the DEFCON 18 Badge."); // send message so the user knows we're in USB mode now
-				while (gUSB_EN) // once we've entered this mode, stay here until USB is disconnected
-				{
-					if (Term_KeyPressed()) // if there's a byte waiting in the rx queue...
-					{
-						Term_ReadChar(&c); // ...then get it
-						switch (c)
-						{
-							case 'C': // Clear frame buffer
-								dc18_clear_fb();
-								dc18_usb_send_ack();
-								break;
-							case 'U': // Update LCD
-						 	  dc18_update_lcd();
-								dc18_usb_send_ack();
-								break;
-							case 'L': // Load byte into frame buffer (refer to Kent Displays' 128x32 Reflex Graphic Display Module
-												// data sheet 25138B pg. 9 for memory map)
-												// Valid byte locations 0x000 (0) to 0x1FF (511)
-												// 0 = pixel on (dark), 1 = pixel off (bright)
-												// Use this command to load all sorts of nifty graphics and data onto the LCD through USB
-												// Example: Sending '00 01 0A' will write value 0xA to address 0x001
-								Term_ReadChar(&c); // These three values are raw hex bytes, NOT ASCII
-								i = (uint16_t)c << 8;
-								Term_ReadChar(&c);
-								i |= (uint16_t)c;
-								Term_ReadChar(&c);
-								if (i < BYTES_PER_IMAGE) gFB[i] = c; // load value 'c' into LCD byte location 'i'
-  		  				dc18_usb_send_ack();
-								break;
-							case 'X': // eXit USB mode
-								dc18_usb_send_ack();
-							  badge_state = DEFCON;
-			    			dc18_load_image(0); // move image from program memory into frame buffer
-								dc18_update_lcd();  // force update
-								gUSB_EN = 0; 				// set flag to 0 to escape the while() loop
-							  break;
-						}
-					}
-				}
-				break;
-		}
+
+	}
+	LED1_PutVal(ON);
 
 		if (gSTATE_CHANGE)
 		{
@@ -152,17 +113,21 @@ void dc18_badge(void)
 		else // USB is plugged in, so stay awake to receive and process commands
 		{
     	LED1_PutVal(ON); 				 // turn on USB indicator LED
-
-			if (Term_KeyPressed()) // if there's a byte waiting in the rx queue...
+    	
+			while (Term_KeyPressed()) // if there's a byte waiting in the rx queue...
 			{
+				Term_SendStr(".");
 				Term_ReadChar(&c); 	 // ...then get it
-				if (c == '#') badge_state = USB; // enter USB mode if requested
 				if (c == '?') {
 				    dc18_SendNum(bloom_getId());
+					Term_SendStr("DONE\n");
+					gRNGseed = 999;
 				}
 				if (c == '!')
 				{
 					int i,j;
+					Term_SendStr("Got Bang.\n");
+
 					// send all but last two
 					for (i=0; i<DEGREE-2; i++)
 					{
@@ -179,7 +144,6 @@ void dc18_badge(void)
 				}
 			}
 		}
-
     dc18_get_buttons();	 // Set gSW flags based on button presses
 		dc18_change_state(gBloom); // Change state, if necessary
 	if (gSW != 0 && !gBloomID)
@@ -525,6 +489,15 @@ void bloom_set(BloomHashBase hash[], BloomVecBase vec[])
 	{
 		uint32_t vecPos = hash[i] / bitsize;
 		uint32_t vecBit = hash[i] % bitsize;
+Term_SendStr("\nHash = ");
+dc18_SendNum(hash[i]);
+Term_SendStr("\nbitsize = ");
+dc18_SendNum(bitsize);
+Term_SendStr("\nvecBit = ");
+dc18_SendNum(vecBit);
+Term_SendStr("\nvecPos = ");
+dc18_SendNum(vecPos);
+Term_SendStr("\n");
 		vec[vecPos] |=((BloomVecBase)1<<vecBit);
 	}
 }
