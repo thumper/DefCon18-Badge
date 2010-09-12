@@ -62,31 +62,6 @@
         </DOCKINFO>
     </WINDOW>
     <WINDOW>
-        <SESSION>-1</SESSION>
-        <EDOCTYPE>1</EDOCTYPE>
-        <PATH USERELATIVEPATHS = "true">DC18_Badge.c</PATH>
-        <FRAMELOC>
-            <X>14</X>
-            <Y>45</Y>
-        </FRAMELOC>
-        <FRAMESIZE>
-            <W>554</W>
-            <H>448</H>
-        </FRAMESIZE>
-        <DOCKINFO>
-            <STATUS>0</STATUS>
-            <ROW></ROW>
-            <COLUMN></COLUMN>
-            <DOCKBARID></DOCKBARID>
-            <PCTWIDTH></PCTWIDTH>
-            <HGT></HGT>
-            <GROUPID>
-                <GIDHIGHPART></GIDHIGHPART>
-                <GIDLOWPART></GIDLOWPART>
-            </GROUPID>
-        </DOCKINFO>
-    </WINDOW>
-    <WINDOW>
         <SESSION>-2147483648</SESSION>
         <EDOCTYPE>24</EDOCTYPE>
         <FRAMELOC>
