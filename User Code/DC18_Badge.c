@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4: */
 /******************************************************************************
 *
 * DEFCON 18 BADGE
@@ -109,43 +110,41 @@ void dc18_badge(void)
    	{
     	LED1_PutVal(OFF); // turn off USB indicator LED
     	dc18_sleep(); 		// sleep until external interrupt
-		}
-		else // USB is plugged in, so stay awake to receive and process commands
-		{
-    	LED1_PutVal(ON); 				 // turn on USB indicator LED
-    	
-			while (Term_KeyPressed()) // if there's a byte waiting in the rx queue...
-			{
-				Term_SendStr(".");
-				Term_ReadChar(&c); 	 // ...then get it
-				if (c == '?') {
-				    dc18_SendNum(bloom_getId());
-					Term_SendStr("DONE\n");
-					gRNGseed = 999;
-				}
-				if (c == '!')
-				{
-					int i,j;
-					Term_SendStr("Got Bang.\n");
+	}
+	else // USB is plugged in, so stay awake to receive and process commands
+	{
+		int foundChar = 0;
+	    LED1_PutVal(ON); 				 // turn on USB indicator LED
+	    while (Term_KeyPressed()) // if there's a byte waiting in the rx queue...
+	    {
+			Term_ReadChar(&c); 	 // ...then get it
+			if (c != 'X') foundChar = 1;
+			if (c == '.' || c== 'X') {
+				// do nothing
+			} else if (c == '?') {
+				dc18_SendNum(bloom_getId());
+				Term_SendStr("DONE\n");
+				gRNGseed = 999;
+			} else if (c == '!') {
+				int i,j;
+				Term_SendStr("Got Bang.\n");
 
-					// send all but last two
-					for (i=0; i<DEGREE-2; i++)
-					{
-						for (j=0; j<BLOOMVEC; j++)
-						{
-							dc18_SendNum(gBloom[i][j]);
-						}
+				// send all but last two
+				for (i=0; i<DEGREE-2; i++) {
+					for (j=0; j<BLOOMVEC; j++) {
+						dc18_SendNum(gBloom[i][j]);
 					}
-					// merge last two filters together
-					for (j=0; j<BLOOMVEC; j++)
-					{
-						dc18_SendNum((gBloom[DEGREE-2][j] | gBloom[DEGREE-1][j]));
-					}
+				}
+				// merge last two filters together
+				for (j=0; j<BLOOMVEC; j++) {
+					dc18_SendNum((gBloom[DEGREE-2][j] | gBloom[DEGREE-1][j]));
 				}
 			}
 		}
-    dc18_get_buttons();	 // Set gSW flags based on button presses
-		dc18_change_state(gBloom); // Change state, if necessary
+		if (foundChar) Term_SendStr("X");
+	}
+	dc18_get_buttons();	 // Set gSW flags based on button presses
+	dc18_change_state(gBloom); // Change state, if necessary
 	if (gSW != 0 && !gBloomID)
 	    bloom_getId();
   }
