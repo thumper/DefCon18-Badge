@@ -46,9 +46,6 @@ serial devices and then would shuffle the data between them as if they
 were directly connected.  This had the added benefit of allowing me to
 snoop on the communication to help with debugging.
 
-References
-==========
-
 [1]: http://www.grandideastudio.com/portfolio/defcon-18-badge/	"DC18 Badge"
 [2]: http://en.wikipedia.org/wiki/Web_of_trust			"Web of Trust"
 [3]: http://en.wikipedia.org/wiki/Bloom_filter			"Bloom filter"
