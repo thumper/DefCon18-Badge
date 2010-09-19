@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		timeout.tv_usec = 0;
-		timeout.tv_sec = 10;
+		timeout.tv_sec = 5;
 		select(maxfd+1, &readfds, NULL, NULL, &timeout);
 		bool found = false;
 		for (int i=0; i<tty.size(); i++) {
@@ -118,7 +118,14 @@ int main(int argc, char *argv[]) {
 			int bytes = read(tty[i]._fd, buf, sizeof(buf));
 			if (bytes <= 0) throw Err("reading error");
 			found = true;
+#if 0
 			write(tty[1-i]._fd, buf, bytes);
+#else
+			for (int j=0; j<bytes; j++) {
+			    write(tty[1-i]._fd, &buf[j], 1);
+			    usleep(20000);
+			}
+#endif
 			if (lastfd != tty[i]._fd) {
 			    cout << endl << "<fd_" << tty[i]._fd << "> ";
 			    lastfd = tty[i]._fd;

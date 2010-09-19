@@ -37,6 +37,7 @@
 #define DEGREE 4
 #define BLOOMVEC 16
 
+#define TERM_DELAY 0
 
 /**************************************************************************
 ************************** Macros *****************************************
@@ -73,6 +74,9 @@ void bloom_CalcHashes(uint32_t rBloomID, BloomHashBase hash[SALTS]);
 short bloom_check(BloomHashBase *hash, BloomVecBase vec[]);
 void bloom_set(BloomHashBase *hash, BloomVecBase vec[]);
 uint32_t bloom_getId();
+void bloom_DebugFilters(BloomVecBase gBloom[DEGREE][BLOOMVEC]);
+
+void comm_ClearRX();
 
 void draw_medium(int c, uint8_t row, uint16_t col);
 void stripe_write(unsigned char block, uint16_t block_length,
