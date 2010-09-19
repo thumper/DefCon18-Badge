@@ -14,6 +14,16 @@ are friends with the other badge holder so that their own badge
 the first time, they can connect the badges and ask "how many degrees
 of separation are there between us?"
 
+To accomplish this, each badge has to hold a snapshot of the social
+network of con attendees, as viewed from perspective of the badge owner.
+The two functions of the badge can then be described as:
+* query - is the other person anywhere in my social network?
+* add - add the other person to my social network as being attached to me.
+
+
+Implementation Overview
+=======================
+
 In practice, there are a few problems that arise:
 1. how do you tell the badges apart?
 2. the badge only has 2K of memory available, so it's not possible
@@ -45,6 +55,104 @@ a small OSX / Linux program which scanned the /dev directory for
 serial devices and then would shuffle the data between them as if they
 were directly connected.  This had the added benefit of allowing me to
 snoop on the communication to help with debugging.
+
+Usage
+=====
+
+The badge source code is setup as Joe gave it to us.  You open
+the file "User Code\DC18.cww" in Code Warrior, and compile it.
+This generates a new executable in S-record format at
+"User Code\support\sdm_pROM_xRAM.elf.S", which you upload to the badge.
+(To upload an image to the badge, you put it into "bootloader" mode
+by holding down both buttons and then plugging in a USB cable.
+This assumes that you've removed the battery so that the device
+is initially off until powered by the cable.)
+
+In the "support" directory is the 'nullmodem' program that I use
+to shuffle data between badges.  Once you have loaded the image on
+multiple badges, move to a Linux machine and plug in two badges.
+Start the 'nullmodem' program.
+
+To get to "Web of Trust" mode from the DEFCON main screen, press
+the top button.  The screen will refresh and show you the hex ID
+of the badge.  Once in "Web of Trust" mode, there are two commands
+you can issue:
+* query - press the bottom button to have the badge query the other
+badge of its ID.  The screen will update with how many degrees of
+separation there are to the remote badge, or 'X' to indicate that
+the remote badge isn't in the social network.  (Note, a value like
+"13" actually means degrees 1 and 3.  The software only goes up to
+four degrees of separation.)
+* add - press both buttons at once to add the remote badge into
+the social network.
+
+Testing
+=======
+
+Here is a description of my test, which might give a sense of
+how the software works:
+
+There are two badges, which I call "Human" and "Newb".  I connect
+them together and enter "Web of Trust" mode on Human.
+I do a 'query' by pressing the bottom button, and get a reply
+of "X" -- the Newb badge has never been seen before.
+I now press both buttons to 'add' Newb to the social network
+of Human.  The badges are now in this state:
+* Newb: empty social network
+* Human: Newb (at degree 1)
+
+Doing another query verifies that Newb is one degree away in
+Human's social graph.  I then repeat the process for Newb, so
+that the badges are now in this state:
+* Human: Newb (at degree 1)
+* Newb: Human (at degree 1), Newb (at degree 2)
+Notice that Newb is two degrees away from himself, via Human.
+First, the cool part is that when you 'add' someone to your
+social network, you also import their whole social network.
+It feels a little odd that 'Newb' is in the graph twice,
+but it's a short-coming of the memory limitations we have.
+
+Now suppose Human and Newb go their separate ways, and
+Human then runs into his old friend Pirate.  They decide
+to acknowledge each other in their social graphs, with
+Human adding Pirate first:
+* Human: Newb (at degree 1), Pirate (at degree 1)
+* Pirate: empty social network
+and then Pirate adding Huma:
+* Human: Newb (at degree 1), Pirate (at degree 1)
+* Pirate: Human (at degree 1), Newb (at degree 2), Pirate (at degree 2)
+
+At a party that evening, Pirate and Newb meet each other.
+Pirate wants to know how freely he can speak, so they connect
+their badges and Pirate runs a query of his social graph.
+He learns that Newb is only two degrees away, so he shares stories
+of his more notorious capers with Newb.  (Notice that if Newb does
+a query of his social network that Pirate won't show up, because
+Pirate didn't get added to Human's social network until later.)
+
+
+Notes
+=====
+
+In the end, the inter-badge communication was probably the hardest
+part of the whole system.  To make sure that everything was working
+right, I added lots of debugging messages that I sent via USB so that
+the 'nullmodem' program would print them out to the screen.  This
+ended up causing problems because I would send data out faster than
+it was being read by the other badge.
+
+To fix this, I added a "command" mode.  When the user presses button
+in the "Web of Trust" mode, the software sends a character ('>') to
+the other badge indicating that it's about to send a bunch of data.
+The remote badge acknowledges the command by sending a reply ('&'),
+and then enters a tight loop that reads characters from the master
+badge until the "end command" character ('<') is received.
+
+Although there can be problems is you are pushing buttons on both
+badges at the same time, the software is otherwise now very reliable
+for me.
+
+
 
 [1]: http://www.grandideastudio.com/portfolio/defcon-18-badge/	"DC18 Badge"
 [2]: http://en.wikipedia.org/wiki/Web_of_trust			"Web of Trust"
