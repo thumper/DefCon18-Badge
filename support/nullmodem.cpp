@@ -96,6 +96,7 @@ int main(int argc, char *argv[]) {
 	try {
 	    int lastfd = 0;
 	    while (tty.size() == 2) {
+		struct timeval timeout;
 		// listen on both fds
 		fd_set readfds;
 		FD_ZERO(&readfds);
@@ -107,20 +108,34 @@ int main(int argc, char *argv[]) {
 			maxfd = tty[i]._fd;
 		}
 
-		select(maxfd+1, &readfds, NULL, NULL, NULL);
+		timeout.tv_usec = 0;
+		timeout.tv_sec = 10;
+		select(maxfd+1, &readfds, NULL, NULL, &timeout);
+		bool found = false;
 		for (int i=0; i<tty.size(); i++) {
 		    if (FD_ISSET(tty[i]._fd, &readfds)) {
 			char buf[256];
 			int bytes = read(tty[i]._fd, buf, sizeof(buf));
 			if (bytes <= 0) throw Err("reading error");
+			found = true;
 			write(tty[1-i]._fd, buf, bytes);
 			if (lastfd != tty[i]._fd) {
 			    cout << endl << "<fd_" << tty[i]._fd << "> ";
 			    lastfd = tty[i]._fd;
 			}
 			buf[bytes] = '\0';
+
+			// strip out control characters
+			for (int j = 0; j < bytes; j++) {
+			    if (buf[j] < 28) buf[j] = '_';
+			}
+
 			cout << buf << flush;
 		    }
+		}
+		if (!found) {
+		    cout << endl << "TIMEOUT" << endl;
+		    write(tty[0]._fd, ".", 1);
 		}
 	    }
 	} catch (Err x) {
