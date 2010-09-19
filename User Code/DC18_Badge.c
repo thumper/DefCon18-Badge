@@ -113,18 +113,16 @@ void dc18_badge(void)
 	}
 	else // USB is plugged in, so stay awake to receive and process commands
 	{
-		int foundChar = 0;
 	    while (Term_KeyPressed()) // if there's a byte waiting in the rx queue...
 	    {
 			LED1_PutVal(ON); 				 // turn on USB indicator LED
 			Term_ReadChar(&c); 	 // ...then get it
 			LED1_PutVal(OFF);
-			if (c != 'X') foundChar = 1;
 			if (c == '.' || c== 'X') {
 				// do nothing
 			} else if (c == '?') {
 				dc18_SendNum(bloom_getId());
-				Term_SendStr("DONE\n");
+				Term_SendStr("\n");
 			} else if (c == '!') {
 				int i,j;
 				Term_SendStr("Got Bang.\n");
@@ -141,7 +139,6 @@ void dc18_badge(void)
 				}
 			}
 		}
-		if (foundChar) Term_SendStr("X");
 	}
 	dc18_get_buttons();	 // Set gSW flags based on button presses
 	dc18_change_state(gBloom); // Change state, if necessary
