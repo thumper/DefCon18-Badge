@@ -124,12 +124,6 @@ int main(int argc, char *argv[]) {
 			    lastfd = tty[i]._fd;
 			}
 			buf[bytes] = '\0';
-
-			// strip out control characters
-			for (int j = 0; j < bytes; j++) {
-			    if (buf[j] < 28) buf[j] = '_';
-			}
-
 			cout << buf << flush;
 		    }
 		}
