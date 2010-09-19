@@ -93,7 +93,6 @@ void dc18_badge(void)
 		    break;
 
 	}
-	LED1_PutVal(ON);
 
 		if (gSTATE_CHANGE)
 		{
@@ -106,6 +105,7 @@ void dc18_badge(void)
 		else
 			gUSB_EN = TRUE;
 
+	LED1_PutVal(OFF);
    	if (!gUSB_EN) // if we are running on battery power...
    	{
     	LED1_PutVal(OFF); // turn off USB indicator LED
@@ -114,17 +114,17 @@ void dc18_badge(void)
 	else // USB is plugged in, so stay awake to receive and process commands
 	{
 		int foundChar = 0;
-	    LED1_PutVal(ON); 				 // turn on USB indicator LED
 	    while (Term_KeyPressed()) // if there's a byte waiting in the rx queue...
 	    {
+			LED1_PutVal(ON); 				 // turn on USB indicator LED
 			Term_ReadChar(&c); 	 // ...then get it
+			LED1_PutVal(OFF);
 			if (c != 'X') foundChar = 1;
 			if (c == '.' || c== 'X') {
 				// do nothing
 			} else if (c == '?') {
 				dc18_SendNum(bloom_getId());
 				Term_SendStr("DONE\n");
-				gRNGseed = 999;
 			} else if (c == '!') {
 				int i,j;
 				Term_SendStr("Got Bang.\n");
@@ -243,10 +243,12 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 #ifdef DEBUG
 				Term_SendStr("received ID = ");
 				dc18_SendNum(rBloomID);
+				Delay(10);
 				Term_SendStr("\n\rHash1=");
 				dc18_SendNum(hash[0]);
 				Term_SendStr("\n\rHash2=");
 				dc18_SendNum(hash[1]);
+				Delay(10);
 				Term_SendStr("\n\rHash3=");
 				dc18_SendNum(hash[2]);
 				Term_SendStr("\n\r");
@@ -267,6 +269,7 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 						col += MED_DIGIT_WIDTH+1;
 #ifdef DEBUG
 						Term_SendStr("Found at degree ");
+						Delay(10);
 						Term_SendChar((uint8_t)('0' + found));
 						Term_SendStr("\n\r");
 #endif
@@ -300,6 +303,7 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 				}
 #ifdef DEBUG
 				Term_SendStr("Thanks.  My filters now look like:\n\r");
+				Delay(10);
 				for (i=0; i<DEGREE; i++)
 				{
 					Term_SendStr("degree ");
@@ -308,6 +312,7 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 					for(j=0; j<BLOOMVEC; j++)
 						dc18_SendNum(gBloom[i][j]);
 					Term_SendStr("\n\r");
+					Delay(10);
 				}
 #endif
 			} else gSTATE_CHANGE = FALSE;
