@@ -118,26 +118,8 @@ void dc18_badge(void)
 			LED1_PutVal(ON); 				 // turn on USB indicator LED
 			Term_ReadChar(&c); 	 // ...then get it
 			LED1_PutVal(OFF);
-			if (c == '.' || c== 'X') {
-				// do nothing
-			} else if (c == '?') {
-				dc18_SendNum(bloom_getId());
-				Term_SendStr("\n");
-			} else if (c == '!') {
-				int i,j;
-
-				// send all but last two
-				for (i=0; i<DEGREE-2; i++) {
-					for (j=0; j<BLOOMVEC; j++) {
-						dc18_SendNum(gBloom[i][j]);
-						comm_ClearRX();
-					}
-				}
-				// merge last two filters together
-				for (j=0; j<BLOOMVEC; j++) {
-					dc18_SendNum((gBloom[DEGREE-2][j] | gBloom[DEGREE-1][j]));
-					comm_ClearRX();
-				}
+			if (c == '>') {
+				comm_CmdLoop(gBloom);
 			}
 		}
 	}
@@ -235,7 +217,7 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 				uint16_t col;
 				uint32_t rBloomID = 0;
 				BloomHashBase hash[SALTS];
-				comm_ClearRX();
+				comm_EnterCmd();
 				Term_SendChar('?');
 				rBloomID = dc18_ReadNum();
 				bloom_CalcHashes(rBloomID, hash);
@@ -282,13 +264,14 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 					Term_SendStr("Not found.\n\r");
 #endif
 				}
+				comm_LeaveCmd();
 				dc18_update_lcd();
 				gSTATE_CHANGE = FALSE;
 			} else if (gSW == SW_BOTH) {
 				int i,j;
 				BloomHashBase hash[SALTS];
 				uint32_t rBloomID = 0;
-				comm_ClearRX();
+				comm_EnterCmd();
 				Term_SendChar('?');
 				rBloomID = dc18_ReadNum();
 				bloom_CalcHashes(rBloomID, hash);
@@ -319,6 +302,7 @@ void dc18_change_state(BloomVecBase gBloom[DEGREE][BLOOMVEC])
 #ifdef DEBUG
 				bloom_DebugFilters(gBloom);
 #endif
+				comm_LeaveCmd();
 			} else gSTATE_CHANGE = FALSE;
 		} else gSTATE_CHANGE = FALSE;
 		break;
@@ -475,8 +459,67 @@ void comm_ClearRX()
 	{
 		while (Term_KeyPressed())
 			Term_ReadChar(&c);
-		Delay(100);
+		Delay(TERM_DELAY);
 	} while (Term_KeyPressed());
+}
+
+void comm_EnterCmd() {
+	bool ackd = FALSE;
+	uint8_t c;
+
+	comm_ClearRX();
+	while (!ackd) {
+		Term_SendChar('>');
+		Delay(10);
+		while (Term_KeyPressed()) {
+			LED1_PutVal(ON);
+			Term_ReadChar(&c);
+			LED1_PutVal(OFF);
+			if (c == '&') ackd = TRUE;
+		}
+	}
+	comm_ClearRX();
+}
+
+void comm_LeaveCmd() {
+	Term_SendChar('<');
+}
+
+void comm_CmdLoop(BloomVecBase gBloom[DEGREE][BLOOMVEC])
+{
+	uint8_t c;
+	int i,j;
+	bool forever = TRUE;
+	LED1_PutVal(ON); 				 // turn on USB indicator LED
+	Term_SendChar('&');				// send ACK back
+	while (forever) {
+		Term_ReadChar(&c);
+		switch (c) {
+			case '<':				// leave command mode
+				forever = FALSE;
+				break;
+			case '?':				// what's my ID
+				dc18_SendNum(bloom_getId());
+				Term_SendStr("\n");
+				break;
+			case '!':				// send my filters
+				// send all but last two
+				for (i=0; i<DEGREE-2; i++) {
+					for (j=0; j<BLOOMVEC; j++) {
+						dc18_SendNum(gBloom[i][j]);
+						comm_ClearRX();
+					}
+				}
+				// merge last two filters together
+				for (j=0; j<BLOOMVEC; j++) {
+					dc18_SendNum((gBloom[DEGREE-2][j] | gBloom[DEGREE-1][j]));
+					comm_ClearRX();
+				}
+				break;
+		}
+	}
+	comm_ClearRX();
+	LED1_PutVal(OFF);
 }
 
 void bloom_CalcHashes(uint32_t rBloomID, BloomHashBase hash[SALTS])
