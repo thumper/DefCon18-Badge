@@ -77,14 +77,15 @@ To get to "Web of Trust" mode from the DEFCON main screen, press
 the top button.  The screen will refresh and show you the hex ID
 of the badge.  Once in "Web of Trust" mode, there are two commands
 you can issue:
+
 * query - press the bottom button to have the badge query the other
-badge of its ID.  The screen will update with how many degrees of
-separation there are to the remote badge, or 'X' to indicate that
-the remote badge isn't in the social network.  (Note, a value like
-"13" actually means degrees 1 and 3.  The software only goes up to
-four degrees of separation.)
+  badge of its ID.  The screen will update with how many degrees of
+  separation there are to the remote badge, or 'X' to indicate that
+  the remote badge isn't in the social network.  (Note, a value like
+  "13" actually means degrees 1 and 3.  The software only goes up to
+  four degrees of separation.)
 * add - press both buttons at once to add the remote badge into
-the social network.
+  the social network.
 
 Testing
 =======
@@ -98,14 +99,17 @@ I do a 'query' by pressing the bottom button, and get a reply
 of "X" -- the Newb badge has never been seen before.
 I now press both buttons to 'add' Newb to the social network
 of Human.  The badges are now in this state:
+
 * Newb: empty social network
 * Human: Newb (at degree 1)
 
 Doing another query verifies that Newb is one degree away in
 Human's social graph.  I then repeat the process for Newb, so
 that the badges are now in this state:
+
 * Human: Newb (at degree 1)
 * Newb: Human (at degree 1), Newb (at degree 2)
+
 Notice that Newb is two degrees away from himself, via Human.
 First, the cool part is that when you 'add' someone to your
 social network, you also import their whole social network.
@@ -116,9 +120,10 @@ Now suppose Human and Newb go their separate ways, and
 Human then runs into his old friend Pirate.  They decide
 to acknowledge each other in their social graphs, with
 Human adding Pirate first:
+
 * Human: Newb (at degree 1), Pirate (at degree 1)
 * Pirate: empty social network
-and then Pirate adding Huma:
+  and then Pirate adding Huma:
 * Human: Newb (at degree 1), Pirate (at degree 1)
 * Pirate: Human (at degree 1), Newb (at degree 2), Pirate (at degree 2)
 
