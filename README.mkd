@@ -17,6 +17,7 @@ of separation are there between us?"
 To accomplish this, each badge has to hold a snapshot of the social
 network of con attendees, as viewed from perspective of the badge owner.
 The two functions of the badge can then be described as:
+
 * query - is the other person anywhere in my social network?
 * add - add the other person to my social network as being attached to me.
 
@@ -25,6 +26,7 @@ Implementation Overview
 =======================
 
 In practice, there are a few problems that arise:
+
 1. how do you tell the badges apart?
 2. the badge only has 2K of memory available, so it's not possible
    to actually memorize the badges you meet (and all the badges that
